@@ -6,7 +6,7 @@ import os
 import sys
 import tensorflow as tf
 import logging
-from blackscholes import pricer as bs_pricer
+from scipy.stats import norm
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 LOGDIR = "/tmp/deep_blackscholes/"
@@ -22,18 +22,93 @@ print("Tensorflow version " + tf.__version__)
 flag = 'c'
 spot = 1
 strike = 1
-time_to_maturity = 1
-risk_free_rate = 0
+maturity = 1
+rate = 0
 
-# Small helper function that creates batch of labeled data.
+def pricer(flag, spot_price, strike, time_to_maturity, vol, risk_free_rate):
+    """
+    Computes the Black-Scholes price of a European option with possibly
+    vectorized inputs.
+
+    :param flag: either "c" for calls or "p" for puts
+    :param spot_price: spot price of the underlying
+    :param strike: strike price
+    :param time_to_maturity: time to maturity in years
+    :param vol: annualized volatility assumed constant until expiration
+    :param risk_free_rate: risk-free interest rate
+
+    :type flag: string
+    :type spot_price: float / numpy array
+    :type strike: float / numpy array
+    :type time_to_maturity: float / numpy array
+    :type vol: float / numpy array
+    :type risk_free_rate: float
+
+    :return: Black-Scholes price
+    :rtype: float / numpy array
+
+    # Example taking vectors as inputs
+
+    >>> spot = np.array([3.9,4.1])
+    >>> strike = 4
+    >>> time_to_maturity = 1
+    >>> vol = np.array([0.1, 0.2])
+    >>> rate = 0
+
+    >>> p = BlackScholes.pricer('c', spot, strike, time_to_maturity, vol, rate)
+    >>> expected_price = np.array([0.1125, 0.3751])
+
+
+    >>> abs(expected_price - p) < 0.0001
+    array([ True,  True], dtype=bool)
+    """
+
+    # Rename variables for convenience.
+
+    S = spot_price
+    K = strike
+    T = time_to_maturity
+    r = risk_free_rate
+
+    # Compute option price.
+
+    d1 = 1/(vol * np.sqrt(T)) * (np.log(S) - np.log(K) + (r+0.5 * vol**2) * T)
+
+    d2 = d1 - vol * np.sqrt(T)
+
+    if flag == 'c':
+
+        price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+
+    elif flag == 'p':
+
+        price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+
+    return price
+
+
 def make_batch(nb_samples, min_vol, max_vol):
     """
-    Produces a synthetic sample of labeled data suitable for learning.
+    Makes a batch of labeled data for learning the Black-Scholes implied
+    volatility function. Samples volatilities uniformly from within given 
+    interval, computes the corresponding Black-Scholes price and returns both.
+
+    :param nb_samples: number of samples required in batch
+    :param min_vol: lower bound of volatilities
+    :param max_vol: upper bound of volatilities
+
+    :type nb_samples: int
+    :type min_vol: float
+    :type max_vol: float
+
+    :return: Black-Scholes prices
+    :rtype: numpy array (nb_samples,1)
+    :return: corresponding volatilities
+    :rtype: numpy array (nb_samples,1)
     """
     
     vol_samples = np.random.uniform(min_vol, max_vol, nb_samples)
-    price_samples = bs_pricer(flag, spot, strike, time_to_maturity, 
-                              vol_samples, risk_free_rate)
+    price_samples = pricer(flag, spot, strike, maturity, vol_samples, rate)
 
     vol_samples = vol_samples.reshape(-1,1)
     price_samples = price_samples.reshape(-1,1)
@@ -45,6 +120,9 @@ def make_batch(nb_samples, min_vol, max_vol):
 # ==============================================================================
 
 def fc_layer(input, dim_in, dim_out, name='fc_layer'):
+    """
+    Definition of a fully connected layer.
+    """
     with tf.name_scope(name):
         W = tf.Variable(tf.truncated_normal([dim_in, dim_out], stddev=0.1), name='W')
         B = tf.Variable(tf.ones([dim_out])/10, name='B')
@@ -55,6 +133,8 @@ def fc_layer(input, dim_in, dim_out, name='fc_layer'):
         return nonlinearity
 
 def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
+    """ 
+    """
 
     # Epsilon bound within which prediction is considered accurate.
     eps = 1E-3
@@ -114,10 +194,27 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
         # Run backpropagation.
         sess.run(train_step, feed_dict={X: train_X, Y_: train_Y})
 
+# MAIN SCRIPTS
+# ==============================================================================
+
 def make_hparam_string(learning_rate, fc1_nb, fc2_nb):
     return "lr_%.0E,%s,%s" % (learning_rate, fc1_nb, fc2_nb)
 
-def main():
+def main_single():
+
+    learning_rate = 1E-3
+    fc1_nb = 55
+    fc2_nb = 10
+
+    hparam = make_hparam_string(learning_rate, fc1_nb, fc2_nb)
+    print("Hyperparameter string: %s" %hparam)
+
+    deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam)
+
+    print('Run `tensorboard --logdir=%s` to see the results.' % LOGDIR)
+
+
+def main_grid():
 
     for learning_rate in [1E-3, 1E-4, 1E-5]:
         for fc1_nb in [5, 10, 15, 25, 50, 100, 200, 500]:
@@ -126,7 +223,6 @@ def main():
                 if fc2_nb < fc1_nb:
 
                     hparam = make_hparam_string(learning_rate, fc1_nb, fc2_nb)
-                    
                     print(hparam)
 
                     deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam)
@@ -134,5 +230,5 @@ def main():
     print('Run `tensorboard --logdir=%s` to see the results.' % LOGDIR)
 
 if __name__ == '__main__':
-    main()
+    main_single()
 
