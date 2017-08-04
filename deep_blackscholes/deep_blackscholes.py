@@ -9,7 +9,7 @@ import logging
 from blackscholes import pricer as bs_pricer
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-LOGDIR = "/tmp/deep_blackscholes/run9"
+LOGDIR = "/tmp/deep_blackscholes/"
 tf.set_random_seed(0)
 
 print("Python version " + sys.version)
@@ -26,7 +26,7 @@ time_to_maturity = 1
 risk_free_rate = 0
 
 # Small helper function that creates batch of labeled data.
-def create_batch(nb_samples, min_vol, max_vol):
+def make_batch(nb_samples, min_vol, max_vol):
     """
     Produces a synthetic sample of labeled data suitable for learning.
     """
@@ -54,7 +54,10 @@ def fc_layer(input, dim_in, dim_out, name='fc_layer'):
         tf.summary.histogram("nonlinearity", nonlinearity)
         return nonlinearity
 
-def deep_impliedvol_model(learning_rate, eps):
+def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
+
+    # Epsilon bound within which prediction is considered accurate.
+    eps = 1E-3
 
     tf.reset_default_graph()
 
@@ -62,14 +65,10 @@ def deep_impliedvol_model(learning_rate, eps):
     X = tf.placeholder(tf.float32, [None, 1], name='input')
     Y_ = tf.placeholder(tf.float32, [None, 1], name='labels')
 
-    # Specify # neurons per layer and build graph.
-    neurons_1 = 500
-    neurons_2 = 100
-    neurons_3 = 1
-
-    fc1 = fc_layer(X, 1, neurons_1, 'fc1')
-    fc2 = fc_layer(fc1, neurons_1, neurons_2, 'fc2')
-    Y = fc_layer(fc2, neurons_2, 1, 'pred')
+    # Build computational graph.
+    fc1 = fc_layer(X, 1, fc1_nb, 'fc1')
+    fc2 = fc_layer(fc1, fc1_nb, fc2_nb, 'fc2')
+    Y = fc_layer(fc2, fc2_nb, 1, 'pred')
 
     # Define the loss function.
     with tf.name_scope('loss'):
@@ -93,18 +92,18 @@ def deep_impliedvol_model(learning_rate, eps):
     sess.run(tf.global_variables_initializer())
 
     # Create writers for train and test data.
-    train_writer = tf.summary.FileWriter(LOGDIR + "_train")
+    train_writer = tf.summary.FileWriter(LOGDIR + hparam + "_train")
     train_writer.add_graph(sess.graph)
-    test_writer = tf.summary.FileWriter(LOGDIR + "_test")
+    test_writer = tf.summary.FileWriter(LOGDIR + hparam + "_test")
     test_writer.add_graph(sess.graph)
 
     # Create test sample.
-    test_X, test_Y = create_batch(1000, 0.01, 2)
+    test_X, test_Y = make_batch(1000, 0.01, 2)
 
     # Run training loops.
     for i in range(10**4):
 
-        train_X, train_Y = create_batch(100, 0.01, 2)
+        train_X, train_Y = make_batch(100, 0.01, 2)
 
         if i % 10 == 0:
             train_sum = sess.run(summary, feed_dict={X: train_X, Y_: train_Y})
@@ -115,13 +114,22 @@ def deep_impliedvol_model(learning_rate, eps):
         # Run backpropagation.
         sess.run(train_step, feed_dict={X: train_X, Y_: train_Y})
 
+def make_hparam_string(learning_rate, fc1_nb, fc2_nb):
+    return "lr_%.0E,%s,%s" % (learning_rate, fc1_nb, fc2_nb)
 
 def main():
 
-    learning_rate = 0.005
-    eps = 0.001
+    for learning_rate in [1E-3, 1E-4, 1E-5]:
+        for fc1_nb in [5, 10, 15, 25, 50, 100, 200, 500]:
+            for fc2_nb in [5, 10, 15, 25, 50, 100, 200, 500]:
 
-    deep_impliedvol_model(learning_rate, eps)
+                if fc2_nb < fc1_nb:
+
+                    hparam = make_hparam_string(learning_rate, fc1_nb, fc2_nb)
+                    
+                    print(hparam)
+
+                    deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam)
 
     print('Run `tensorboard --logdir=%s` to see the results.' % LOGDIR)
 
