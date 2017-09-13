@@ -9,21 +9,14 @@ import logging
 from scipy.stats import norm
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-LOGDIR = "/tmp/deep_blackscholes/"
-tf.set_random_seed(0)
+LOGDIR = "/tmp/deep_impliedvol/"
+tf.set_random_seed(42)
 
 print("Python version " + sys.version)
 print("Tensorflow version " + tf.__version__)
 
 # BLACK-SCHOLES SPECIFIC STUFF
 # ==============================================================================
-
-# Parameters of Black-Scholes function (bar the volatility).
-flag = 'c'
-spot = 1
-strike = 1
-maturity = 1
-rate = 0
 
 def pricer(flag, spot_price, strike, time_to_maturity, vol, risk_free_rate):
     """
@@ -133,13 +126,9 @@ def fc_layer(input, dim_in, dim_out, name='fc_layer'):
         return nonlinearity
 
 def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
-    """ 
     """
-
-    # Epsilon bound within which prediction is considered accurate.
-    eps = 1E-3
-
-    tf.reset_default_graph()
+    At the moment only learns function R -> R, price -> vol.
+    """
 
     # Placeholders for labeled pair of training data.
     X = tf.placeholder(tf.float32, [None, 1], name='input')
@@ -159,9 +148,9 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
     with tf.name_scope('training'):
         train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
-    # Define accuracy to be percentage of predictions within eps of labels.
+    # Define accuracy to be percentage of predictions within 1E-3 of labels.
     with tf.name_scope('accuracy'):
-        close_prediction = tf.less_equal(tf.abs(Y-Y_), eps)
+        close_prediction = tf.less_equal(tf.abs(Y-Y_), 1E-3)
         accuracy = tf.reduce_mean(tf.cast(close_prediction, tf.float32))
         tf.summary.scalar('accuracy', accuracy)
 
@@ -178,14 +167,14 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
     test_writer.add_graph(sess.graph)
 
     # Create test sample.
-    test_X, test_Y = make_batch(1000, 0.01, 2)
+    test_X, test_Y = make_batch(1000, 1E-10, 2)
 
     # Run training loops.
     for i in range(10**4):
 
-        train_X, train_Y = make_batch(100, 0.01, 2)
+        train_X, train_Y = make_batch(100, 1E-10, 2)
 
-        if i % 10 == 0:
+        if i % 50 == 0:
             train_sum = sess.run(summary, feed_dict={X: train_X, Y_: train_Y})
             train_writer.add_summary(train_sum, i)
             test_sum = sess.run(summary, feed_dict={X: test_X, Y_: test_Y})
@@ -195,7 +184,7 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
         sess.run(train_step, feed_dict={X: train_X, Y_: train_Y})
 
 # MAIN SCRIPTS
-# ==============================================================================
+# =============================================================================
 
 def make_hparam_string(learning_rate, fc1_nb, fc2_nb):
     return "lr_%.0E,%s,%s" % (learning_rate, fc1_nb, fc2_nb)
@@ -230,5 +219,13 @@ def main_grid():
     print('Run `tensorboard --logdir=%s` to see the results.' % LOGDIR)
 
 if __name__ == '__main__':
+
+    # Parameters of Black-Scholes function (except for the volatility).
+    flag = 'c'
+    spot = 1
+    strike = 1
+    maturity = 1
+    rate = 0
+
     main_single()
 
