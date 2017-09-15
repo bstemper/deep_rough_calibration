@@ -130,6 +130,8 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
     At the moment only learns function R -> R, price -> vol.
     """
 
+    tf.reset_default_graph()
+
     # Placeholders for labeled pair of training data.
     X = tf.placeholder(tf.float32, [None, 1], name='input')
     Y_ = tf.placeholder(tf.float32, [None, 1], name='labels')
@@ -227,5 +229,5 @@ if __name__ == '__main__':
     maturity = 1
     rate = 0
 
-    main_single()
+    main_grid()
 
