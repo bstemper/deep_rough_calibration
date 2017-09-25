@@ -9,9 +9,6 @@ import logging
 from scipy.stats import norm
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-LOGDIR = "/tmp/deep_impliedvol/"
-tf.set_random_seed(42)
-
 print("Python version " + sys.version)
 print("Tensorflow version " + tf.__version__)
 
@@ -158,32 +155,37 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
 
     summary = tf.summary.merge_all()
 
-    # Initialise session.
-    sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
+    # Run session through the computational graph.
+    with tf.Session() as sess:
 
-    # Create writers for train and test data.
-    train_writer = tf.summary.FileWriter(LOGDIR + hparam + "_train")
-    train_writer.add_graph(sess.graph)
-    test_writer = tf.summary.FileWriter(LOGDIR + hparam + "_test")
-    test_writer.add_graph(sess.graph)
+        # Initialize all variables in the graph.
+        sess.run(tf.global_variables_initializer())
 
-    # Create test sample.
-    test_X, test_Y = make_batch(1000, 1E-10, 2)
+        # Create writers for train and test data.
+        train_writer = tf.summary.FileWriter(LOGDIR + hparam + "_train", 
+                                             graph=sess.graph)
 
-    # Run training loops.
-    for i in range(10**4):
+        test_writer = tf.summary.FileWriter(LOGDIR + hparam + "_test",
+                                            graph=sess.graph)
 
-        train_X, train_Y = make_batch(100, 1E-10, 2)
+        # Create test sample.
+        test_X, test_Y = make_batch(test_batch_size, 1E-10, 2)
 
-        if i % 50 == 0:
-            train_sum = sess.run(summary, feed_dict={X: train_X, Y_: train_Y})
-            train_writer.add_summary(train_sum, i)
-            test_sum = sess.run(summary, feed_dict={X: test_X, Y_: test_Y})
-            test_writer.add_summary(test_sum, i)
+        # Run training loops.
+        for i in range(nb_training_runs):
 
-        # Run backpropagation.
-        sess.run(train_step, feed_dict={X: train_X, Y_: train_Y})
+            train_X, train_Y = make_batch(train_batch_size, 1E-10, 2)
+
+            # Run backpropagation and summary op.
+            _, train_sum = sess.run([train_step, summary], 
+                                    feed_dict={X: train_X, Y_: train_Y})
+
+            if i % 50 == 0:
+                train_writer.add_summary(train_sum, i)
+                test_sum = sess.run(summary, feed_dict={X: test_X, Y_: test_Y})
+                test_writer.add_summary(test_sum, i)
+
+            
 
 # MAIN SCRIPTS
 # =============================================================================
@@ -220,6 +222,9 @@ def main_grid():
 
     print('Run `tensorboard --logdir=%s` to see the results.' % LOGDIR)
 
+# CALLING SCRIPTS
+# =============================================================================    
+
 if __name__ == '__main__':
 
     # Parameters of Black-Scholes function (except for the volatility).
@@ -228,6 +233,15 @@ if __name__ == '__main__':
     strike = 1
     maturity = 1
     rate = 0
+
+    # Configuration.
+    tf.set_random_seed(42)
+    LOGDIR = "/tmp/deep_impliedvol/"
+    nb_training_runs = 10**4
+    test_batch_size = 1000
+    train_batch_size = 100
+
+    # calling
 
     main_grid()
 
