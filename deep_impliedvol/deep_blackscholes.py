@@ -129,6 +129,9 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
 
     tf.reset_default_graph()
 
+    # Set random seed for reproducibility and comparability.
+    tf.set_random_seed(random_seed)
+
     # Placeholders for labeled pair of training data.
     X = tf.placeholder(tf.float32, [None, 1], name='input')
     Y_ = tf.placeholder(tf.float32, [None, 1], name='labels')
@@ -180,7 +183,7 @@ def deep_impliedvol_model(learning_rate, fc1_nb, fc2_nb, hparam):
             _, train_sum = sess.run([train_step, summary], 
                                     feed_dict={X: train_X, Y_: train_Y})
 
-            if i % 50 == 0:
+            if i % 100 == 0:
                 train_writer.add_summary(train_sum, i)
                 test_sum = sess.run(summary, feed_dict={X: test_X, Y_: test_Y})
                 test_writer.add_summary(test_sum, i)
@@ -195,9 +198,9 @@ def make_hparam_string(learning_rate, fc1_nb, fc2_nb):
 
 def main_single():
 
-    learning_rate = 1E-3
-    fc1_nb = 55
-    fc2_nb = 10
+    learning_rate = 1E-4
+    fc1_nb = 50
+    fc2_nb = 15
 
     hparam = make_hparam_string(learning_rate, fc1_nb, fc2_nb)
     print("Hyperparameter string: %s" %hparam)
@@ -235,10 +238,10 @@ if __name__ == '__main__':
     rate = 0
 
     # Configuration.
-    tf.set_random_seed(42)
-    LOGDIR = "/tmp/deep_impliedvol/"
-    nb_training_runs = 10**4
-    test_batch_size = 1000
+    random_seed = 42
+    LOGDIR = "/tmp/deep_impliedvol1/"
+    nb_training_runs = 5*10**4
+    test_batch_size = 10**4
     train_batch_size = 100
 
     # calling
