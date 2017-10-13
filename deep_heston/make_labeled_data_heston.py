@@ -88,7 +88,7 @@ if __name__ == '__main__':
     K_bounds = [0.5, 1.5]
 
     # Other parameters
-    csv_file_name = 'training_uniform.csv'
+    csv_file_name = 'data_uniform.csv'
     nb_samples = 10**3
 
     main()

@@ -119,8 +119,8 @@ if __name__ == '__main__':
     max_vol = 2
 
     # Other parameters
-    csv_file_name = 'abra.csv'
-    nb_samples = 10**5
+    csv_file_name = 'data_uniform.csv'
+    nb_samples = 10**6
   
 
     main()
