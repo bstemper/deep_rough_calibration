@@ -11,17 +11,18 @@ r = robjects.r
 r.source("heston.R")
 r_pricer = r('HestonCallClosedForm')
 
+
 def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
     """
     Computes European Call price under Heston dynamics with closedform solution.
 
     :param lambd: mean-reversion speed
     :param vbar: long-term average volatility
-    :param eta: volatility of vol process
+    :param eta: volatility of vol
     :param rho: correlation between stock and vol
     :param v0: intial volatility
     :param r: risk-free interest rate
-    :param tau: time to maturity
+    :param tau: time to maturity (year = 250 days)
     :param S0: initial share price
     :param K: strike price
 
@@ -30,9 +31,10 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
 
     """
 
-    # Compute BS Implied volatility induced by Heston price.
+    # Compute Heston price using Closed Form Solution R pricer. 
     price = r_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)[0]
 
+    # Convert price to Black-Scholes implied volatility.
     try:
 
         iv = implied_volatility(price, S0, K, tau, r, 'c')
@@ -41,16 +43,22 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
 
         iv = None
 
-        print('Below Intrinsic Value Error. Price %s' % price)
+        price_is_zero = price < 1E-8
+
+        print('BelowIntrinsicValue Exception. Because price basically 0? %s' % price_is_zero)
 
     return iv
 
 
 def write_to_csv(file_name, data, header):
+    """
+    Helper function that facilitates writing to csv file.
+    """
 
-        np.savetxt(file_name, data, delimiter=',', newline='\n', header=header)
+    np.savetxt(file_name, data, delimiter=',', newline='\n', header=header)
 
-def main():
+
+def make_batch(nb_samples):
 
     # Initialise data array to be exported to CSV.
     data = np.zeros((nb_samples, 8))
@@ -62,13 +70,18 @@ def main():
 
         # Sample uniformly from Heston parameter space.
         lambd = np.random.uniform(lambd_bounds[0], lambd_bounds[1])
+
         vbar = np.random.uniform(vbar_bounds[0], vbar_bounds[1])
+
         eta = np.random.uniform(eta_bounds[0], eta_bounds[1])
+
         rho = np.random.uniform(rho_bounds[0], rho_bounds[1])
+
         v0 = np.random.uniform(v0_bounds[0], v0_bounds[1])
 
         # Sample uniformly from option parameter space.
         tau = np.random.uniform(tau_bounds[0], tau_bounds[1])
+
         K = np.random.uniform(K_bounds[0], K_bounds[1])
 
         # Check for Feller's condition. 
@@ -77,6 +90,7 @@ def main():
             # Calculate Black-Scholes implied vol from Heston price.
             iv = heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)
 
+            # Check for numerical instability for almost zero prices.
             if iv is not None:
 
                 data[count, 0] = lambd
@@ -91,10 +105,19 @@ def main():
                 print('Count %i/%i' % (count + 1, nb_samples))
 
                 # Increase running counter.
-                count+=1
+                count += 1
+
+    return data
+
+
+def main():
+
+    # Sample labeled data.
+    data = make_batch(nb_samples)
 
     # Write labeled data to .csv file. 
     write_to_csv(csv_file_name, data, 'lambda, vbar, eta, rho, v0, tau, K, iv')
+
 
 if __name__ == '__main__':
 
