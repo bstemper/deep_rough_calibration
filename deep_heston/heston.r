@@ -27,7 +27,7 @@
 ## dV_t = \lambda (\vbar - V_t)dt - eta sqrt(V_t)dW_t^V
 ## with d<W^S,W^V>_t = \rho dt
 
-ONEYEAR <- 250
+ONEYEAR <- 365
 
 Moneyness <- function(S, K, tau, r) {
     K*exp(-r*tau)/S
