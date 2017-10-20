@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 import rpy2.robjects as robjects
+import numba
 from py_vollib.black_scholes.implied_volatility import implied_volatility
 from py_lets_be_rational.exceptions import BelowIntrinsicException
 
@@ -26,8 +27,8 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
     :param S0: initial share price
     :param K: strike price
 
-    :return: Black-Scholes implied volatility
-    :rtype: float
+    :return: Heston price, Black-Scholes implied volatility
+    :rtype: float, float
 
     """
 
@@ -43,11 +44,7 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
 
         iv = None
 
-        price_is_zero = price < 1E-8
-
-        print('BelowIntrinsicValue Exception. Because price basically 0? %s' % price_is_zero)
-
-    return iv
+    return price, iv
 
 
 def write_to_csv(file_name, data, header):
@@ -55,7 +52,8 @@ def write_to_csv(file_name, data, header):
     Helper function that facilitates writing to csv file.
     """
 
-    np.savetxt(file_name, data, delimiter=',', newline='\n', header=header)
+    np.savetxt(file_name + ".csv", data, delimiter=',', newline='\n', 
+               header=header)
 
 
 def make_batch(nb_samples):
@@ -66,46 +64,61 @@ def make_batch(nb_samples):
     # Calculate Heston prices and associated implied volatilities.
     count = 0
 
-    while count < nb_samples:
+    with open("%s_errors.csv" % csv_file_name, "a") as log:
 
-        # Sample uniformly from Heston parameter space.
-        lambd = np.random.uniform(lambd_bounds[0], lambd_bounds[1])
+        log.write("lambda, vbar, eta, rho, v0, r, tau, S0, K, price, \
+                   intrinsic, price < intrinsic, abs(price) < 1E-5, OK?  \n" )
 
-        vbar = np.random.uniform(vbar_bounds[0], vbar_bounds[1])
+        while count < nb_samples:
 
-        eta = np.random.uniform(eta_bounds[0], eta_bounds[1])
+            # Sample uniformly from Heston parameter space.
+            lambd = np.random.uniform(lambd_bounds[0], lambd_bounds[1])
 
-        rho = np.random.uniform(rho_bounds[0], rho_bounds[1])
+            vbar = np.random.uniform(vbar_bounds[0], vbar_bounds[1])
 
-        v0 = np.random.uniform(v0_bounds[0], v0_bounds[1])
+            eta = np.random.uniform(eta_bounds[0], eta_bounds[1])
 
-        # Sample uniformly from option parameter space.
-        tau = np.random.uniform(tau_bounds[0], tau_bounds[1])
+            rho = np.random.uniform(rho_bounds[0], rho_bounds[1])
 
-        K = np.random.uniform(K_bounds[0], K_bounds[1])
+            v0 = np.random.uniform(v0_bounds[0], v0_bounds[1])
 
-        # Check for Feller's condition. 
-        if 2 * lambd * vbar > eta**2:
+            # Sample uniformly from option parameter space.
+            tau = np.random.uniform(tau_bounds[0], tau_bounds[1])
 
-            # Calculate Black-Scholes implied vol from Heston price.
-            iv = heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)
+            K = np.random.uniform(K_bounds[0], K_bounds[1])
 
-            # Check for numerical instability for almost zero prices.
-            if iv is not None:
+            # Check for Feller's condition. 
+            if 2 * lambd * vbar > eta**2:
 
-                data[count, 0] = lambd
-                data[count, 1] = vbar
-                data[count, 2] = eta
-                data[count, 3] = rho
-                data[count, 4] = v0
-                data[count, 5] = tau
-                data[count, 6] = K
-                data[count, 7] = iv
+                # Calculate Black-Scholes implied vol from Heston price.
+                price, iv = heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)
 
-                print('Count %i/%i' % (count + 1, nb_samples))
+                if iv is not None:
 
-                # Increase running counter.
-                count += 1
+                    data[count, 0] = lambd
+                    data[count, 1] = vbar
+                    data[count, 2] = eta
+                    data[count, 3] = rho
+                    data[count, 4] = v0
+                    data[count, 5] = tau
+                    data[count, 6] = K
+                    data[count, 7] = iv
+
+                    print('Count %i/%i' % (count + 1, nb_samples))
+
+                    # Increase running counter.
+                    count += 1
+
+                # Implied volatility function returns exception.
+                else:
+
+                    # Collect all necessary information to judge why it failed.
+                    error_data = (lambd, vbar, eta, rho, v0, r, tau, S0, K, 
+                                  price, S0 - K, price < S0 - K, 
+                                  np.abs(price) < 1E-5, 
+                                  (price < S0 - K) or (np.abs(price) < 1E-5))
+
+                    log.write("%s \n" % repr(error_data))
 
     return data
 
@@ -122,7 +135,7 @@ def main():
 if __name__ == '__main__':
 
     # Declare seed for sampling from parameter regions.
-    np.random.seed(0)
+    np.random.seed(1337)
 
     # Standardised parameters
     S0 = 1
@@ -136,12 +149,12 @@ if __name__ == '__main__':
     v0_bounds = [0, 1]
 
     # Option parameter bounds (based on traded option data)
-    tau_bounds = [1/250, 1]
-    K_bounds = [0.75, 1.5]
+    tau_bounds = [0, 90/365]
+    K_bounds = [0.75, 1.25]
 
     # Other parameters
-    csv_file_name = 'data_uniform.csv'
-    nb_samples = 10**3
+    csv_file_name = 'data_uniform_v1'
+    nb_samples = 10**4
 
     main()
 
