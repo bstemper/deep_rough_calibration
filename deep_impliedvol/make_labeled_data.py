@@ -78,9 +78,7 @@ def make_batch(S, r, flag, K_bounds, tau_bounds, vol_bounds, csv_file_name, nb_s
     price_samples = pricer(flag, S, strike_samples, tau_samples, vol_samples, r)
 
     # Construct labeled pairs.
-    S = np.tile(int(S), nb_samples)
-    r = np.tile(int(r), nb_samples)
-    labeled_pair = np.stack((S, r, strike_samples, tau_samples, price_samples, 
+    labeled_pair = np.stack((strike_samples, tau_samples, price_samples, 
                             vol_samples), axis=1)
     
     return labeled_pair
@@ -95,7 +93,7 @@ def main():
         data = make_batch(S, r, flag, K_bounds, tau_bounds, vol_bounds, csv_file_name, nb_samples)
 
         # Write labeled data to .csv file.
-        header = 'spot, rate, strike, time to maturity, price, vol'
+        header = 'strike, time to maturity, price, vol'
         write_to_csv(csv_file_name + ".csv", data, header)
 
 if __name__ == '__main__':
