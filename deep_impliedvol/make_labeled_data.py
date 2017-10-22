@@ -67,29 +67,21 @@ def pricer(flag, spot_price, strike, time_to_maturity, vol, risk_free_rate):
     return price
 
 
-def make_batch(nb_samples, min_vol, max_vol):
-    """
-    Makes a single batch of labeled data for learning the Black-Scholes implied
-    volatility function. Samples volatilities uniformly from within given 
-    interval, computes the corresponding Black-Scholes price and returns the
-    labeled pair as a numpy array.
+def make_batch(S, r, flag, K_bounds, tau_bounds, vol_bounds, csv_file_name, nb_samples):
 
-    :param nb_samples: number of samples required in batch
-    :param min_vol: lower bound of volatilities
-    :param max_vol: upper bound of volatilities
+    # Sample uniformly from input space.
+    vol_samples = np.random.uniform(vol_bounds[0], vol_bounds[1], nb_samples)
+    strike_samples = np.random.uniform(K_bounds[0], K_bounds[1], nb_samples)
+    tau_samples = np.random.uniform(tau_bounds[0], tau_bounds[1], nb_samples)
 
-    :type nb_samples: int
-    :type min_vol: float
-    :type max_vol: float
+    # Compute Black-Scholes price. 
+    price_samples = pricer(flag, S, strike_samples, tau_samples, vol_samples, r)
 
-    :return: labeled pair (price, vol)
-    :rtype: numpy array (nb_samples,2)
-    """
-    
-    vol_samples = np.random.uniform(min_vol, max_vol, nb_samples)
-    price_samples = pricer(flag, spot, strike, maturity, vol_samples, rate)
-
-    labeled_pair = np.stack((price_samples, vol_samples), axis=1)
+    # Construct labeled pairs.
+    S = np.tile(int(S), nb_samples)
+    r = np.tile(int(r), nb_samples)
+    labeled_pair = np.stack((S, r, strike_samples, tau_samples, price_samples, 
+                            vol_samples), axis=1)
     
     return labeled_pair
 
@@ -100,28 +92,30 @@ def write_to_csv(file_name, data, header):
 def main():
 
         # Sample labeled data.
-        data = make_batch(nb_samples, min_vol, max_vol)
+        data = make_batch(S, r, flag, K_bounds, tau_bounds, vol_bounds, csv_file_name, nb_samples)
 
-        # Write labeled data to .csv file. 
-        write_to_csv(csv_file_name, data, 'price, vol')
+        # Write labeled data to .csv file.
+        header = 'spot, rate, strike, time to maturity, price, vol'
+        write_to_csv(csv_file_name + ".csv", data, header)
 
 if __name__ == '__main__':
 
-    np.random.seed(0)
+    # Declare seed for sampling from parameter regions.
+    np.random.seed(1337)
 
-    # Parameters of Black-Scholes function (except for the volatility).
+    # Fixed parameters.
+    S = 1           # spot
+    r = 0           # rate
     flag = 'c'
-    spot = 1
-    strike = 1
-    maturity = 1
-    rate = 0
-    min_vol = 1E-5
-    max_vol = 2
+
+    # Varying parameters.
+    K_bounds = [0.75, 1.25]     # strike
+    tau_bounds = [0, 90/365]    # time to maturity 
+    vol_bounds = [1E-4, 2]      # volatility
 
     # Other parameters
-    csv_file_name = 'data_uniform.csv'
+    csv_file_name = 'data_uniform'
     nb_samples = 10**6
   
-
     main()
 

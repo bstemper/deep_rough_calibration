@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
     # Other parameters
     csv_file_name = 'data_uniform_v1'
-    nb_samples = 10**4
+    nb_samples = 10**6
 
     main()
 
