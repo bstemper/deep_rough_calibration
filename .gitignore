@@ -1,5 +1,12 @@
-
 *.ipynb_checkpoints/*
 *.pyc
-
+*.csv
 *.pdf
+*.aux
+*.out
+*.log
+*.synctex.gz
+
+*.csv
+
+*.csv
