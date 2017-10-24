@@ -99,7 +99,7 @@ def main():
 if __name__ == '__main__':
 
     # Declare seed for sampling from parameter regions.
-    np.random.seed(1337)
+    np.random.seed(2)
 
     # Fixed parameters.
     S = 1           # spot
@@ -112,8 +112,8 @@ if __name__ == '__main__':
     vol_bounds = [1E-4, 2]      # volatility
 
     # Other parameters
-    csv_file_name = 'data_uniform'
-    nb_samples = 10**6
+    csv_file_name = 'test_uniform_3d'
+    nb_samples = 10**5
   
     main()
 
