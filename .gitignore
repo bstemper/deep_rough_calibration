@@ -14,3 +14,13 @@
 *.png
 
 *.csv
+
+*.meta
+
+*.index
+
+*.data-00000-of-00001
+
+*.de
+
+deep_impliedvol/run1/checkpoints/checkpoint
