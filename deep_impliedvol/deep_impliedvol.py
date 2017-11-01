@@ -27,12 +27,12 @@ def fc_layer(input, dim_in, dim_out, name='fc_layer'):
 
 def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels):
 
-    nn = namedtuple('nn', ['input', 'labels', 'pred', 'loss'])
+    nn = namedtuple('nn', ['inputs', 'labels', 'pred', 'loss'])
 
     tf.reset_default_graph()
 
     # Placeholders for labeled pair of training data.
-    nn.input = tf.placeholder(tf.float32, [None, nb_features], name='input')
+    nn.inputs = tf.placeholder(tf.float32, [None, nb_features], name='inputs')
     nn.labels = tf.placeholder(tf.float32, [None, nb_labels], name='labels')
 
     # Build the computational graph consisting of a feed forward NN. 
@@ -40,7 +40,7 @@ def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels):
 
     layers = []
 
-    layers.append(fc_layer(nn.input, nb_features, nn_layer_sizes[0], 'fc_hidden0'))
+    layers.append(fc_layer(nn.inputs, nb_features, nn_layer_sizes[0], 'fc_hidden0'))
 
     for i in range(nb_hidden_layers - 1):
 
@@ -55,6 +55,24 @@ def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels):
     with tf.name_scope('loss'):
         nn.loss = tf.reduce_sum(tf.square(nn.pred-nn.labels))
         tf.summary.scalar('loss', nn.loss)
+
+    # Define accuracy to be % of predictions within certain delta of labels.
+    with tf.name_scope('accuracy'):
+
+        # Accuracy to 1E-3
+        close_prediction_3dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-3)
+        nn.accuracy_3dp = tf.reduce_mean(tf.cast(close_prediction_3dp, tf.float32))
+        tf.summary.scalar('accuracy_3dp', nn.accuracy_3dp)
+
+        # Accuracy to 1E-4
+        close_prediction_4dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-4)
+        nn.accuracy_4dp = tf.reduce_mean(tf.cast(close_prediction_4dp, tf.float32))
+        tf.summary.scalar('accuracy_4dp', nn.accuracy_4dp)
+
+        # Accuracy to 1E-5
+        close_prediction_5dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-5)
+        nn.accuracy_5dp = tf.reduce_mean(tf.cast(close_prediction_5dp, tf.float32))
+        tf.summary.scalar('accuracy_5dp', nn.accuracy_5dp)
 
     return nn
 
@@ -79,6 +97,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
 
     # Set random seed for reproducibility and comparability.
     tf.set_random_seed(seed)
+    np.random.seed(seed+1)
 
     # Read training and validation data named tuples into memory.
     train_set = import_labeled_csv_data(train_set_csv, [0], [1])
@@ -91,24 +110,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
     with tf.name_scope('training'):
         train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
 
-    # Define accuracy to be % of predictions within certain delta of labels.
-    with tf.name_scope('accuracy'):
-
-        # Accuracy to 1E-3
-        close_prediction_3dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-3)
-        accuracy_3dp = tf.reduce_mean(tf.cast(close_prediction_3dp, tf.float32))
-        tf.summary.scalar('accuracy_3dp', accuracy_3dp)
-
-        # Accuracy to 1E-4
-        close_prediction_4dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-4)
-        accuracy_4dp = tf.reduce_mean(tf.cast(close_prediction_4dp, tf.float32))
-        tf.summary.scalar('accuracy_4dp', accuracy_4dp)
-
-        # Accuracy to 1E-5
-        close_prediction_5dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-5)
-        accuracy_5dp = tf.reduce_mean(tf.cast(close_prediction_5dp, tf.float32))
-        tf.summary.scalar('accuracy_5dp', accuracy_5dp)
-
+    # Collect all summary ops in one op.
     summary = tf.summary.merge_all()
 
     # Run session through the computational graph.
@@ -121,6 +123,9 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
         # Create writers for train and validation data.
         hparam = " %s, lr_%.0E" % (nn_layer_sizes, lr)
         writer = tf.summary.FileWriter(LOGDIR + hparam, graph=sess.graph)
+
+        # Add ops to save and restore all the variables.
+        saver = tf.train.Saver()
 
         # Perform training cycles.
         for epoch in range(nb_epochs):
@@ -136,7 +141,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
 
                 mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
 
-                train_feed_dict = { nn.input : train_set.features[mini_batch_indices, :],
+                train_feed_dict = { nn.inputs : train_set.features[mini_batch_indices, :],
                                     nn.labels: train_set.labels[mini_batch_indices, :]
                                    }
 
@@ -145,7 +150,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
 
          
             # Writing tensorboard summaries to disk.
-            val_feed_dict = { nn.input : validation_set.features,
+            val_feed_dict = { nn.inputs : validation_set.features,
                               nn.labels : validation_set.labels
                             }
 
@@ -153,33 +158,73 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
 
             writer.add_summary(validation_summary, epoch)
 
-            acc_3dp, acc_4dp, acc_5dp = sess.run([accuracy_3dp, accuracy_4dp, accuracy_5dp], feed_dict= val_feed_dict)
+            # Printing accuracies at different levels to see training of NN.
+            loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.accuracy_3dp, nn.accuracy_4dp, nn.accuracy_5dp], feed_dict= val_feed_dict)
+            print('Epoch: ', epoch, 'loss:', loss, 'acc3dp: ', acc_3dp, 'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
 
-            print('Epoch: ', epoch, 'acc3dp: ', acc_3dp, 'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
+            # Save checkpoint files for reuse later.
+            saver.save(sess, save_path=model_path, global_step=epoch)
 
             # Stop performing training cycles if network is accurate enough.
-            if acc_3dp > 0.99:
+            if acc_3dp > 0.999:
 
                 break
 
+        # Saving final model.
+        save_path = saver.save(sess, model_path + 'final_model')
 
-    print('Run `tensorboard --logdir=%s` to see the results.' % LOGDIR)
+        print("Model saved in file: %s" % save_path)
+
+
+    print('Run `tensorboard --logdir=%s/%s` to see the results.' % (CURRENT_PATH, LOGDIR))
+
+def test(test_set_csv, model_path):
+
+    tf.reset_default_graph()
+
+    # Read test data named tuple into memory. 
+    test_set = import_labeled_csv_data(test_set_csv, [0], [1])
+
+    # Build the computational graph of a feed-forward NN.
+    nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels)
+
+    saver = tf.train.Saver()
+
+    # Run session through the computational graph.
+    with tf.Session() as sess:
+
+        saver.restore(sess, tf.train.latest_checkpoint(model_path))
+
+        test_feed_dict = {nn.inputs : test_set.features,
+                          nn.labels : test_set.labels
+                         }
+
+        # Printing accuracies at different levels to see quality of NN.
+        acc_3dp, acc_4dp, acc_5dp = sess.run([nn.accuracy_3dp, nn.accuracy_4dp, nn.accuracy_5dp], feed_dict= test_feed_dict)
+        print('Test acc3dp:', acc_3dp, 'acc4dp:', acc_4dp, 'acc5dp:', acc_5dp)
 
 
    
 
 if __name__ == '__main__':
 
+    CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
     # Configuration.
-    train_set_csv = '1d_labeled_data/train_uniform_1d.csv'
-    val_set_csv = '1d_labeled_data/validation_uniform_1d.csv'
+    ID = 1
+    train_set_csv = 'lab_data_1_1/train_uniform.csv'
+    val_set_csv = 'lab_data_1_1/validation_uniform.csv'
+    test_set_csv = 'lab_data_1_1/test_uniform.csv'
     mini_batch_size = 100
     nn_layer_sizes = [64, 32]
     lr = 0.0005
     seed = 0
     nb_epochs = 10000
 
-    LOGDIR = "/tmp/test/"
+    LOGDIR = "run%s/" % str(ID)
+    model_path = './run%s/checkpoints/' % str(ID)
 
-    train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
+    # train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
+
+    test(test_set_csv, model_path)
+

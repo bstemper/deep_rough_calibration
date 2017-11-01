@@ -24,3 +24,11 @@
 *.de
 
 deep_impliedvol/run1/checkpoints/checkpoint
+
+deep_impliedvol/run2/checkpoints/checkpoint
+
+deep_impliedvol/run3/checkpoints/checkpoint
+
+*.local
+
+*.rtf
