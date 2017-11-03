@@ -121,8 +121,10 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
         sess.run(init)
 
         # Create writers for train and validation data.
-        hparam = " %s, lr_%.0E" % (nn_layer_sizes, lr)
-        writer = tf.summary.FileWriter(LOGDIR + hparam, graph=sess.graph)
+        net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
+        hyp_param_settings = net_config + ",lr_%.0E" % (lr)
+        writer = tf.summary.FileWriter(LOGDIR + hyp_param_settings, graph=sess.graph)
+        print(hyp_param_settings)
 
         # Add ops to save and restore all the variables.
         saver = tf.train.Saver()
@@ -166,7 +168,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
             saver.save(sess, save_path=model_path, global_step=epoch)
 
             # Stop performing training cycles if network is accurate enough.
-            if acc_3dp > 0.999:
+            if acc_3dp > 0.99:
 
                 break
 
@@ -217,14 +219,14 @@ if __name__ == '__main__':
     test_set_csv = 'lab_data_1_1/test_uniform.csv'
     mini_batch_size = 100
     nn_layer_sizes = [64, 32]
-    lr = 0.0005
+    lr = 0.0002
     seed = 0
     nb_epochs = 10000
 
     LOGDIR = "run%s/" % str(ID)
     model_path = './run%s/checkpoints/' % str(ID)
 
-    # train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
+    train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
 
-    test(test_set_csv, model_path)
+    # test(test_set_csv, model_path)
 

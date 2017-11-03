@@ -32,3 +32,9 @@ deep_impliedvol/run3/checkpoints/checkpoint
 *.local
 
 *.rtf
+
+*.bib
+
+*.graffle
+
+*.tikz
