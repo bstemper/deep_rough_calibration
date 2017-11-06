@@ -6,6 +6,7 @@ import sys
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import time
 from collections import namedtuple
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
@@ -61,18 +62,18 @@ def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels):
 
         # Accuracy to 1E-3
         close_prediction_3dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-3)
-        nn.accuracy_3dp = tf.reduce_mean(tf.cast(close_prediction_3dp, tf.float32))
-        tf.summary.scalar('accuracy_3dp', nn.accuracy_3dp)
+        nn.acc_3dp = tf.reduce_mean(tf.cast(close_prediction_3dp, tf.float32))
+        tf.summary.scalar('accuracy_3dp', nn.acc_3dp)
 
         # Accuracy to 1E-4
         close_prediction_4dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-4)
-        nn.accuracy_4dp = tf.reduce_mean(tf.cast(close_prediction_4dp, tf.float32))
-        tf.summary.scalar('accuracy_4dp', nn.accuracy_4dp)
+        nn.acc_4dp = tf.reduce_mean(tf.cast(close_prediction_4dp, tf.float32))
+        tf.summary.scalar('accuracy_4dp', nn.acc_4dp)
 
         # Accuracy to 1E-5
         close_prediction_5dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-5)
-        nn.accuracy_5dp = tf.reduce_mean(tf.cast(close_prediction_5dp, tf.float32))
-        tf.summary.scalar('accuracy_5dp', nn.accuracy_5dp)
+        nn.acc_5dp = tf.reduce_mean(tf.cast(close_prediction_5dp, tf.float32))
+        tf.summary.scalar('accuracy_5dp', nn.acc_5dp)
 
     return nn
 
@@ -93,7 +94,7 @@ def import_labeled_csv_data(filename, feature_cols, label_cols):
     return data
 
 
-def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs):
+def train(train_set_csv, valid_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs):
 
     # Initialization.
     tf.reset_default_graph()
@@ -102,7 +103,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
 
     # Read training and validation data named tuples into memory.
     train_set = import_labeled_csv_data(train_set_csv, [0], [1])
-    validation_set = import_labeled_csv_data(val_set_csv, [0], [1]) 
+    val_set = import_labeled_csv_data(valid_set_csv, [0], [1]) 
 
     # Build the computational graph of a feed-forward NN.
     nn = rank1_ff_nn(train_set.nb_features, nn_layer_sizes, train_set.nb_labels)
@@ -120,8 +121,8 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
     summary = tf.summary.merge_all()
 
     # Build the validation set dictionary.
-    val_feed_dict = { nn.inputs : validation_set.features,
-                      nn.labels : validation_set.labels}
+    val_feed_dict = { nn.inputs : val_set.features,
+                      nn.labels : val_set.labels}
 
     # Run session through the computational graph.
     with tf.Session() as sess:
@@ -160,7 +161,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
             writer.add_summary(validation_summary, epoch)
 
             # Printing accuracies at different levels to see training of NN.
-            loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.accuracy_3dp, nn.accuracy_4dp, nn.accuracy_5dp], feed_dict= val_feed_dict)
+            loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict= val_feed_dict)
             print('Epoch: ', epoch, 'loss:', loss, 'acc3dp: ', acc_3dp, 'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
 
             # Save checkpoint files for reuse later.
@@ -179,7 +180,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
     print('Run `tensorboard --logdir=%s/%s` to see the results.' % (CURRENT_PATH, LOGDIR))
 
 
-def test(test_set_csv, model_path):
+def test_acc(test_set_csv, nn_layer_sizes, model_path):
 
     tf.reset_default_graph()
 
@@ -189,23 +190,56 @@ def test(test_set_csv, model_path):
     # Build the computational graph of a feed-forward NN.
     nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels)
 
+    # Initialization.
     saver = tf.train.Saver()
+    test_feed_dict = {nn.inputs : test_set.features,
+                      nn.labels : test_set.labels}
 
     # Run session through the computational graph.
     with tf.Session() as sess:
 
         saver.restore(sess, tf.train.latest_checkpoint(model_path))
 
-        test_feed_dict = {nn.inputs : test_set.features,
-                          nn.labels : test_set.labels
-                         }
-
-        # Printing accuracies at different levels to see quality of NN.
-        acc_3dp, acc_4dp, acc_5dp = sess.run([nn.accuracy_3dp, nn.accuracy_4dp, nn.accuracy_5dp], feed_dict= test_feed_dict)
+        # Printing accuracies at different levels to see quality of NN training.
+        acc_3dp, acc_4dp, acc_5dp = sess.run([nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=test_feed_dict)
         print('Test acc3dp:', acc_3dp, 'acc4dp:', acc_4dp, 'acc5dp:', acc_5dp)
 
 
-   
+def time_benchmark(test_set_csv, nn_layer_sizes, model_path):
+
+    nb_tries = 100
+
+    # Initialization.
+    tf.reset_default_graph()
+    test_set = import_labeled_csv_data(test_set_csv, [0], [1])
+    nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels)
+    saver = tf.train.Saver()
+    test_feed_dict = {nn.inputs : test_set.features,
+                      nn.labels : test_set.labels}
+
+    # Run session through the computational graph.
+    with tf.Session() as sess:
+
+        saver.restore(sess, tf.train.latest_checkpoint(model_path))
+
+        avg_time = 0
+
+        for _ in range(nb_tries):
+
+            start_time = time.time()
+
+            sess.run([nn.pred], feed_dict=test_feed_dict)
+
+            duration = time.time() - start_time
+
+            print(duration)
+
+            avg_time += duration
+
+        avg_time = avg_time/nb_tries
+
+    print('%i tries, %i data points, avg time: %f' % (nb_tries, test_set.nb_samples, avg_time))
+ 
 
 if __name__ == '__main__':
 
@@ -214,7 +248,7 @@ if __name__ == '__main__':
     # Configuration.
     ID = 2
     train_set_csv = 'lab_data_1_1/train_uniform.csv'
-    val_set_csv = 'lab_data_1_1/validation_uniform.csv'
+    valid_set_csv = 'lab_data_1_1/validation_uniform.csv'
     test_set_csv = 'lab_data_1_1/test_uniform.csv'
     mini_batch_size = 100
     nn_layer_sizes = [64, 32]
@@ -225,7 +259,9 @@ if __name__ == '__main__':
     LOGDIR = "run%s/" % str(ID)
     model_path = './run%s/checkpoints/' % str(ID)
 
-    train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
+    # train(train_set_csv, valid_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
 
-    # test(test_set_csv, model_path)
+    # test_acc(test_set_csv, nn_layer_sizes, model_path)
+
+    time_benchmark(test_set_csv, nn_layer_sizes, model_path)
 
