@@ -95,13 +95,14 @@ def import_labeled_csv_data(filename, feature_cols, label_cols):
 
 def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs):
 
-    # Set random seed for reproducibility and comparability.
+    # Initialization.
+    tf.reset_default_graph()
     tf.set_random_seed(seed)
     np.random.seed(seed+1)
 
     # Read training and validation data named tuples into memory.
     train_set = import_labeled_csv_data(train_set_csv, [0], [1])
-    validation_set = import_labeled_csv_data(val_set_csv, [0], [1])
+    validation_set = import_labeled_csv_data(val_set_csv, [0], [1]) 
 
     # Build the computational graph of a feed-forward NN.
     nn = rank1_ff_nn(train_set.nb_features, nn_layer_sizes, train_set.nb_labels)
@@ -110,25 +111,27 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
     with tf.name_scope('training'):
         train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
 
+    # Print neural network configuration.
+    net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
+    hyp_param_settings = net_config + ",lr_%.0E" % (lr)
+    print("Neural network built with hyperparameter settings:", hyp_param_settings)  
+
     # Collect all summary ops in one op.
     summary = tf.summary.merge_all()
+
+    # Build the validation set dictionary.
+    val_feed_dict = { nn.inputs : validation_set.features,
+                      nn.labels : validation_set.labels}
 
     # Run session through the computational graph.
     with tf.Session() as sess:
 
-        # Initialize all variables in the graph.
+        # Init.
         init = tf.global_variables_initializer()
         sess.run(init)
-
-        # Create writers for train and validation data.
-        net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
-        hyp_param_settings = net_config + ",lr_%.0E" % (lr)
-        writer = tf.summary.FileWriter(LOGDIR + hyp_param_settings, graph=sess.graph)
-        print(hyp_param_settings)
-
-        # Add ops to save and restore all the variables.
         saver = tf.train.Saver()
-
+        writer = tf.summary.FileWriter(LOGDIR + hyp_param_settings, graph=sess.graph)
+    
         # Perform training cycles.
         for epoch in range(nb_epochs):
 
@@ -138,7 +141,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
             # Do random shuffling of the indices of training samples.
             shuffled_indices = np.random.permutation(train_set.nb_samples)
 
-            # Running through individual minibatches and doing backprop
+            # Running through individual minibatches and doing backprop.
             for i in range(nb_mini_batches):
 
                 mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
@@ -151,13 +154,9 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
                 sess.run([train_step], feed_dict=train_feed_dict)
 
          
-            # Writing tensorboard summaries to disk.
-            val_feed_dict = { nn.inputs : validation_set.features,
-                              nn.labels : validation_set.labels
-                            }
-
+            
+            # Writing results on validation set to disk.
             validation_summary = sess.run(summary, feed_dict = val_feed_dict)
-
             writer.add_summary(validation_summary, epoch)
 
             # Printing accuracies at different levels to see training of NN.
@@ -177,8 +176,8 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
 
         print("Model saved in file: %s" % save_path)
 
-
     print('Run `tensorboard --logdir=%s/%s` to see the results.' % (CURRENT_PATH, LOGDIR))
+
 
 def test(test_set_csv, model_path):
 
@@ -226,7 +225,7 @@ if __name__ == '__main__':
     LOGDIR = "run%s/" % str(ID)
     model_path = './run%s/checkpoints/' % str(ID)
 
-    train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
+    # train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
 
-    # test(test_set_csv, model_path)
+    test(test_set_csv, model_path)
 
