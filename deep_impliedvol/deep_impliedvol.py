@@ -16,8 +16,8 @@ print("Tensorflow version " + tf.__version__)
 def fc_layer(input, dim_in, dim_out, name='fc_layer'):
 
     with tf.name_scope(name):
-        W = tf.Variable(tf.truncated_normal([dim_in, dim_out], stddev=0.1), name='W')
-        B = tf.Variable(tf.ones([dim_out])/10, name='B')
+        W = tf.Variable(tf.truncated_normal([dim_in, dim_out], stddev=2.0/dim_in), name='W')
+        B = tf.Variable(tf.zeros([dim_out]), name='B')
         nonlinearity = tf.nn.relu(tf.matmul(input, W) + B)
         tf.summary.histogram("weights", W)
         tf.summary.histogram("biases", B)
@@ -167,7 +167,7 @@ def train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed,
             saver.save(sess, save_path=model_path, global_step=epoch)
 
             # Stop performing training cycles if network is accurate enough.
-            if acc_3dp > 0.99:
+            if acc_4dp > 0.99:
 
                 break
 
@@ -212,20 +212,20 @@ if __name__ == '__main__':
     CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
     # Configuration.
-    ID = 1
+    ID = 2
     train_set_csv = 'lab_data_1_1/train_uniform.csv'
     val_set_csv = 'lab_data_1_1/validation_uniform.csv'
     test_set_csv = 'lab_data_1_1/test_uniform.csv'
     mini_batch_size = 100
     nn_layer_sizes = [64, 32]
-    lr = 0.0002
+    lr = 0.0001
     seed = 0
     nb_epochs = 10000
 
     LOGDIR = "run%s/" % str(ID)
     model_path = './run%s/checkpoints/' % str(ID)
 
-    # train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
+    train(train_set_csv, val_set_csv, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
 
-    test(test_set_csv, model_path)
+    # test(test_set_csv, model_path)
 
