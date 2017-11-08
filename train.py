@@ -5,22 +5,14 @@ import numpy as np
 from helpers import import_labeled_csv_data
 from neural_network import rank1_ff_nn
 
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-print("Python version " + sys.version)
-print("Tensorflow version " + tf.__version__)
 
-
-def train(train_filename, validation_filename, feature_cols, label_cols, 
-          nn_layer_sizes, lr, seed, nb_epochs, print_train=False):
+def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs, 
+          mini_batch_size, print_train=False):
 
     # Initialization.
     tf.reset_default_graph()
     tf.set_random_seed(seed)
     np.random.seed(seed+1)
-
-    # Read training and validation data named tuples into memory.
-    train_set = import_labeled_csv_data(train_filename, feature_cols, label_cols)
-    val_set = import_labeled_csv_data(validation_filename, feature_cols, label_cols) 
 
     # Build the computational graph of a feed-forward NN.
     nn = rank1_ff_nn(train_set.nb_features, nn_layer_sizes, train_set.nb_labels)
@@ -38,8 +30,8 @@ def train(train_filename, validation_filename, feature_cols, label_cols,
     summary = tf.summary.merge_all()
 
     # Build the validation set dictionary.
-    val_feed_dict = { nn.inputs : val_set.features,
-                      nn.labels : val_set.labels}
+    val_feed_dict = { nn.inputs : validation_set.features,
+                      nn.labels : validation_set.labels}
 
     # Run session through the computational graph.
     with tf.Session() as sess:
@@ -48,7 +40,7 @@ def train(train_filename, validation_filename, feature_cols, label_cols,
         init = tf.global_variables_initializer()
         sess.run(init)
         saver = tf.train.Saver()
-        writer = tf.summary.FileWriter(LOGDIR + hyp_param_settings, graph=sess.graph)
+        writer = tf.summary.FileWriter(hyp_param_settings, graph=sess.graph)
     
         # Perform training cycles.
         for epoch in range(nb_epochs):
@@ -82,7 +74,7 @@ def train(train_filename, validation_filename, feature_cols, label_cols,
                       'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
 
             # Save checkpoint files for reuse later.
-            saver.save(sess, save_path=model_path, global_step=epoch)
+            saver.save(sess, save_path=hyp_param_settings + '/', global_step=epoch)
 
             # Stop performing training cycles if network is accurate enough.
             if acc_4dp > 0.99:
@@ -90,32 +82,9 @@ def train(train_filename, validation_filename, feature_cols, label_cols,
                 break
 
         # Saving final model.
-        save_path = saver.save(sess, model_path + 'final_model')
+        save_path = saver.save(sess, hyp_param_settings + '/' + 'final_model')
 
         print("Model saved in file: %s" % save_path)
 
-    print('Run `tensorboard --logdir=%s/%s` to see the results.' % (abs_path, LOGDIR))
 
-if __name__ == '__main__':
-
-    abs_path = os.path.dirname(os.path.abspath(__file__))
-
-    # Configuration.
-    ID = 1
-    train_filename = 'deep_impliedvol/lab_data_1_1/train_uniform.csv'
-    validation_filename = 'deep_impliedvol/lab_data_1_1/validation_uniform.csv'
-    test_filename = 'deep_impliedvol/lab_data_1_1/test_uniform.csv'
-    feature_cols = [0]
-    label_cols = [1]
-    mini_batch_size = 100
-    nn_layer_sizes = [64, 32]
-    lr = 0
-    seed = 1
-    nb_epochs = 2
-
-
-    LOGDIR = "run%s/" % str(ID)
-    model_path = './run%s/checkpoints/' % str(ID)
-
-    train(train_filename, validation_filename, feature_cols, label_cols, 
-          nn_layer_sizes, lr, seed, nb_epochs, print_train=True)
+    

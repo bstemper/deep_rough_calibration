@@ -70,21 +70,19 @@ def measure_speed(filename, feature_cols, label_cols, nn_layer_sizes, model_path
 if __name__ == '__main__':
 
     # Configuration.
-    ID = 1
-    test_filename = 'deep_impliedvol/lab_data_3_1/test_uniform.csv'
-    feature_cols = [0, 1, 2]
-    label_cols = [3]
-    mini_batch_size = 100
+    test_filename = 'deep_impliedvol/labeled_data_toy/test_uniform.csv'
+    feature_cols = [0]
+    label_cols = [1]
     nn_layer_sizes = [64, 32]
-    lr = 0
-    seed = 1
-    nb_epochs = 2
+    lr = 1E-05
 
+    net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
+    hyp_param_settings = net_config + ",lr_%.0E" % (lr)
 
-    LOGDIR = "run%s/" % str(ID)
-    model_path = './run%s/checkpoints/' % str(ID)
-   
+    model_path = hyp_param_settings + '/'
 
-    # test_accuracy(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path)
+    test_accuracy(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path)
 
     measure_speed(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path)
+
+    
