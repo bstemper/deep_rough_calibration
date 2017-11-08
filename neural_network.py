@@ -1,14 +1,5 @@
-import os
-import sys
 import tensorflow as tf
-import pandas as pd
-import numpy as np
-import time
 from collections import namedtuple
-
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-print("Python version " + sys.version)
-print("Tensorflow version " + tf.__version__)
 
 
 def fc_layer(input, dim_in, dim_out, name='fc_layer'):
@@ -74,29 +65,4 @@ def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels):
 
     return nn
 
-
-
-if __name__ == '__main__':
-
-    CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
-
-    # Configuration.
-    ID = 4
-    train_config = ['lab_data_3_1/train_uniform.csv', [0, 1, 2], [3]]
-    valid_config = ['lab_data_3_1/validation_uniform.csv', [0, 1, 2], [3]]
-    test_config = ['lab_data_3_1/test_uniform.csv', [0, 1, 2], [3]]
-    mini_batch_size = 100
-    nn_layer_sizes = [64, 32]
-    lr = 0.00001
-    seed = 1
-    nb_epochs = 10**4
-
-    LOGDIR = "run%s/" % str(ID)
-    model_path = './run%s/checkpoints/' % str(ID)
-
-    train(train_config, valid_config, mini_batch_size, nn_layer_sizes, lr, seed, nb_epochs)
-
-    # test_acc(test_config, nn_layer_sizes, model_path)
-
-    # time_benchmark(test_config, nn_layer_sizes, model_path)
-
+    
