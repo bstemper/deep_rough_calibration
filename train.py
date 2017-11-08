@@ -11,7 +11,7 @@ print("Tensorflow version " + tf.__version__)
 
 
 def train(train_filename, validation_filename, feature_cols, label_cols, 
-          nn_layer_sizes, lr, seed, nb_epochs):
+          nn_layer_sizes, lr, seed, nb_epochs, print_train=False):
 
     # Initialization.
     tf.reset_default_graph()
@@ -76,8 +76,10 @@ def train(train_filename, validation_filename, feature_cols, label_cols,
             writer.add_summary(validation_summary, epoch)
 
             # Printing accuracies at different levels to see training of NN.
-            loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=val_feed_dict)
-            print('Epoch: ', epoch, 'loss:', loss, 'acc3dp: ', acc_3dp, 'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
+            if print_train == True:
+                loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=val_feed_dict)
+                print('Epoch: ', epoch, 'loss:', loss, 'acc3dp: ', acc_3dp, 
+                      'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
 
             # Save checkpoint files for reuse later.
             saver.save(sess, save_path=model_path, global_step=epoch)
@@ -92,19 +94,19 @@ def train(train_filename, validation_filename, feature_cols, label_cols,
 
         print("Model saved in file: %s" % save_path)
 
-    print('Run `tensorboard --logdir=%s/%s` to see the results.' % (CURRENT_PATH, LOGDIR))
+    print('Run `tensorboard --logdir=%s/%s` to see the results.' % (abs_path, LOGDIR))
 
 if __name__ == '__main__':
 
-    CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
+    abs_path = os.path.dirname(os.path.abspath(__file__))
 
     # Configuration.
     ID = 1
-    train_filename = 'deep_impliedvol/lab_data_3_1/train_uniform.csv'
-    validation_filename = 'deep_impliedvol/lab_data_3_1/validation_uniform.csv'
-    test_filename = 'deep_impliedvol/lab_data_3_1/test_uniform.csv'
-    feature_cols = [0, 1, 2]
-    label_cols = [3]
+    train_filename = 'deep_impliedvol/lab_data_1_1/train_uniform.csv'
+    validation_filename = 'deep_impliedvol/lab_data_1_1/validation_uniform.csv'
+    test_filename = 'deep_impliedvol/lab_data_1_1/test_uniform.csv'
+    feature_cols = [0]
+    label_cols = [1]
     mini_batch_size = 100
     nn_layer_sizes = [64, 32]
     lr = 0
@@ -116,4 +118,4 @@ if __name__ == '__main__':
     model_path = './run%s/checkpoints/' % str(ID)
 
     train(train_filename, validation_filename, feature_cols, label_cols, 
-          nn_layer_sizes, lr, seed, nb_epochs)
+          nn_layer_sizes, lr, seed, nb_epochs, print_train=True)

@@ -69,8 +69,6 @@ def measure_speed(filename, feature_cols, label_cols, nn_layer_sizes, model_path
 
 if __name__ == '__main__':
 
-    CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
-
     # Configuration.
     ID = 1
     test_filename = 'deep_impliedvol/lab_data_3_1/test_uniform.csv'
