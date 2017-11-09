@@ -7,7 +7,7 @@ from neural_network import rank1_ff_nn
 
 
 def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs, 
-          mini_batch_size, print_train=False):
+          mini_batch_size, log_name, print_train=False):
 
     # Initialization.
     tf.reset_default_graph()
@@ -23,8 +23,7 @@ def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs,
 
     # Print neural network configuration.
     net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
-    hyp_param_settings = net_config + ",lr_%.0E" % (lr)
-    print("Neural network built with hyperparameter settings:", hyp_param_settings)  
+    hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
 
     # Collect all summary ops in one op.
     summary = tf.summary.merge_all()
@@ -41,6 +40,10 @@ def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs,
         sess.run(init)
         saver = tf.train.Saver()
         writer = tf.summary.FileWriter(hyp_param_settings, graph=sess.graph)
+
+        with open(log_name, "a") as log_file:
+
+            log_file.write(hyp_param_settings + '\n')
     
         # Perform training cycles.
         for epoch in range(nb_epochs):
@@ -68,8 +71,13 @@ def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs,
             writer.add_summary(validation_summary, epoch)
 
             # Printing accuracies at different levels to see training of NN.
+            loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=val_feed_dict)
+            
+            with open(log_name, "a") as log_file:
+                log_file.write('Epoch: %i, loss: %f, acc3dp: %f, acc4dp: %f, acc5dp: %f \n'
+                                % (epoch, loss, acc_3dp, acc_4dp, acc_5dp ))
+            
             if print_train == True:
-                loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=val_feed_dict)
                 print('Epoch: ', epoch, 'loss:', loss, 'acc3dp: ', acc_3dp, 
                       'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
 
@@ -83,8 +91,4 @@ def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs,
 
         # Saving final model.
         save_path = saver.save(sess, hyp_param_settings + '/' + 'final_model')
-
-        print("Model saved in file: %s" % save_path)
-
-
     
