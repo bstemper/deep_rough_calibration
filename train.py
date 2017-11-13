@@ -71,21 +71,21 @@ def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs,
             writer.add_summary(validation_summary, epoch)
 
             # Printing accuracies at different levels to see training of NN.
-            loss, acc_3dp, acc_4dp, acc_5dp = sess.run([nn.loss, nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=val_feed_dict)
+            loss, acc_2pc, acc_1pc = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=val_feed_dict)
             
             with open(log_name, "a") as log_file:
-                log_file.write('Epoch: %i, loss: %f, acc3dp: %f, acc4dp: %f, acc5dp: %f \n'
-                                % (epoch, loss, acc_3dp, acc_4dp, acc_5dp ))
+                log_file.write('Epoch: %i, loss: %f, acc2pc: %f, acc1pc: %f \n'
+                                % (epoch, loss, acc_2pc, acc_1pc))
             
             if print_train == True:
-                print('Epoch: ', epoch, 'loss:', loss, 'acc3dp: ', acc_3dp, 
-                      'acc4dp: ', acc_4dp, 'acc5dp: ', acc_5dp)
+                print('Epoch: ', epoch, 'loss:', loss, 'acc2pc: ', acc_2pc, 
+                      'acc1pc: ', acc_1pc)
 
             # Save checkpoint files for reuse later.
             saver.save(sess, save_path=hyp_param_settings + '/', global_step=epoch)
 
             # Stop performing training cycles if network is accurate enough.
-            if acc_4dp > 0.99:
+            if acc_2pc > 0.99:
 
                 break
 

@@ -31,8 +31,8 @@ def test_accuracy(filename, feature_cols, label_cols, nn_layer_sizes, model_path
         saver.restore(sess, tf.train.latest_checkpoint(model_path))
 
         # Printing accuracies at different levels to see quality of NN training.
-        acc_3dp, acc_4dp, acc_5dp = sess.run([nn.acc_3dp, nn.acc_4dp, nn.acc_5dp], feed_dict=test_feed_dict)
-        print('Test acc3dp:', acc_3dp, 'acc4dp:', acc_4dp, 'acc5dp:', acc_5dp)
+        loss, acc_2pc, acc_1pc = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=test_feed_dict)
+        print('Test acc2pc:', acc_2pc, 'acc1pc:', acc_1pc)
 
 def measure_speed(filename, feature_cols, label_cols, nn_layer_sizes, model_path):
 
@@ -74,12 +74,14 @@ if __name__ == '__main__':
     feature_cols = [0]
     label_cols = [1]
     nn_layer_sizes = [64, 32]
-    lr = 1E-05
+    lr = 5E-05
 
     net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
-    hyp_param_settings = net_config + ",lr_%.0E" % (lr)
+    hyp_param_settings = net_config + ",lr_%.5E" % (lr)
 
     model_path = hyp_param_settings + '/'
+
+    print(model_path)
 
     test_accuracy(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path)
 

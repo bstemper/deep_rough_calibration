@@ -45,23 +45,20 @@ def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels):
         nn.loss = tf.reduce_sum(tf.square(nn.pred-nn.labels))
         tf.summary.scalar('loss', nn.loss)
 
-    # Define accuracy to be % of predictions within certain delta of labels.
+    # Let accuracy be % of preds with relative error below a certain threshold.
     with tf.name_scope('accuracy'):
 
-        # Accuracy to 1E-3
-        close_prediction_3dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-3)
-        nn.acc_3dp = tf.reduce_mean(tf.cast(close_prediction_3dp, tf.float32))
-        tf.summary.scalar('accuracy_3dp', nn.acc_3dp)
+        relative_error = tf.abs(nn.pred-nn.labels)/nn.labels
 
-        # Accuracy to 1E-4
-        close_prediction_4dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-4)
-        nn.acc_4dp = tf.reduce_mean(tf.cast(close_prediction_4dp, tf.float32))
-        tf.summary.scalar('accuracy_4dp', nn.acc_4dp)
+        # Relative error less than 2%
+        close_prediction_2pc = tf.less_equal(relative_error, 0.02)
+        nn.acc_2pc = tf.reduce_mean(tf.cast(close_prediction_2pc, tf.float32))
+        tf.summary.scalar('accuracy_2pc', nn.acc_2pc)
 
-        # Accuracy to 1E-5
-        close_prediction_5dp = tf.less_equal(tf.abs(nn.pred-nn.labels), 1E-5)
-        nn.acc_5dp = tf.reduce_mean(tf.cast(close_prediction_5dp, tf.float32))
-        tf.summary.scalar('accuracy_5dp', nn.acc_5dp)
+        # Relative error less than 1%
+        close_prediction_1pc = tf.less_equal(relative_error, 0.01)
+        nn.acc_1pc = tf.reduce_mean(tf.cast(close_prediction_1pc, tf.float32))
+        tf.summary.scalar('accuracy_1pc', nn.acc_1pc)
 
     return nn
 
