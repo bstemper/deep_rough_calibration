@@ -1,3 +1,5 @@
+
+# File endings
 *.ipynb_checkpoints/*
 *.pyc
 *.csv
@@ -6,35 +8,18 @@
 *.out
 *.log
 *.synctex.gz
-
-*.csv
-
-*.csv
-
 *.png
-
-*.csv
-
 *.meta
-
 *.index
-
 *.data-00000-of-00001
-
 *.de
-
-deep_impliedvol/run1/checkpoints/checkpoint
-
-deep_impliedvol/run2/checkpoints/checkpoint
-
-deep_impliedvol/run3/checkpoints/checkpoint
-
 *.local
-
 *.rtf
-
 *.bib
-
 *.graffle
-
 *.tikz
+
+# Folders
+
+computations/
+computations_toy/
