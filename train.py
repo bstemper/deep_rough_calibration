@@ -6,16 +6,16 @@ from helpers import import_labeled_csv_data
 from neural_network import rank1_ff_nn
 
 
-def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs, 
+def train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
           mini_batch_size, log_name, print_train=False):
 
     # Initialization.
     tf.reset_default_graph()
-    tf.set_random_seed(seed)
-    np.random.seed(seed+1)
+    np.random.seed(random_seed)
 
     # Build the computational graph of a feed-forward NN.
-    nn = rank1_ff_nn(train_set.nb_features, nn_layer_sizes, train_set.nb_labels)
+    nn = rank1_ff_nn(train_set.nb_features, nn_layer_sizes, train_set.nb_labels,
+                     random_seed)
 
     # Build the training op.
     with tf.name_scope('training'):
@@ -85,7 +85,7 @@ def train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs,
             saver.save(sess, save_path=hyp_param_settings + '/', global_step=epoch)
 
             # Stop performing training cycles if network is accurate enough.
-            if acc_2pc > 0.99:
+            if acc_1pc > 0.99:
 
                 break
 

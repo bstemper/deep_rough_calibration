@@ -17,7 +17,7 @@ validation_filename = 'deep_impliedvol/labeled_data_toy/validation_uniform.csv'
 test_filename = 'deep_impliedvol/labeled_data_toy/test_uniform.csv'
 feature_cols = [0]
 label_cols = [1]
-seed = 0
+random_seed = 42
 
 def main_single():
 
@@ -25,7 +25,7 @@ def main_single():
 	mini_batch_size = 100
 	nn_layer_sizes = [64, 32]
 	lr = 0.00005
-	log_name = 'log.txt'
+	log_name = 'log_test.txt'
 	
 	# Read training and validation data named tuples into memory.
 	train_set = import_labeled_csv_data(train_filename, feature_cols, 
@@ -34,7 +34,7 @@ def main_single():
 	validation_set = import_labeled_csv_data(validation_filename, feature_cols, 
 											 label_cols)
 	
-	train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs, 
+	train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
 	  mini_batch_size, log_name, print_train=True)
 
 def main_random_search():
@@ -58,11 +58,11 @@ def main_random_search():
 
 		for lr in 10**np.random.uniform(-6, 1, nb_learning_rates):
 
-			train(train_set, validation_set, nn_layer_sizes, lr, seed, nb_epochs, 
+			train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
 	  			  mini_batch_size, log_name, print_train=True)
 
 
 if __name__ == '__main__':
 	
-	main_random_search()
+	main_single()
 

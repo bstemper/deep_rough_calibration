@@ -10,7 +10,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 print("Python version " + sys.version)
 print("Tensorflow version " + tf.__version__)
 
-def test_accuracy(filename, feature_cols, label_cols, nn_layer_sizes, model_path):
+def test_accuracy(filename, feature_cols, label_cols, nn_layer_sizes, model_path, random_seed):
 
     tf.reset_default_graph()
 
@@ -18,7 +18,7 @@ def test_accuracy(filename, feature_cols, label_cols, nn_layer_sizes, model_path
     test_set = import_labeled_csv_data(filename, feature_cols, label_cols)
 
     # Build the computational graph of a feed-forward NN.
-    nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels)
+    nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels, random_seed)
 
     # Initialization.
     saver = tf.train.Saver()
@@ -34,14 +34,14 @@ def test_accuracy(filename, feature_cols, label_cols, nn_layer_sizes, model_path
         loss, acc_2pc, acc_1pc = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=test_feed_dict)
         print('Test acc2pc:', acc_2pc, 'acc1pc:', acc_1pc)
 
-def measure_speed(filename, feature_cols, label_cols, nn_layer_sizes, model_path):
+def measure_speed(filename, feature_cols, label_cols, nn_layer_sizes, model_path, random_seed):
 
     nb_tries = 100
 
     # Initialization.
     tf.reset_default_graph()
     test_set = import_labeled_csv_data(filename, feature_cols, label_cols)
-    nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels)
+    nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels, random_seed)
     saver = tf.train.Saver()
     test_feed_dict = {nn.inputs : test_set.features,
                       nn.labels : test_set.labels}
@@ -74,6 +74,7 @@ if __name__ == '__main__':
     feature_cols = [0]
     label_cols = [1]
     nn_layer_sizes = [64, 32]
+    random_seed = 42
     lr = 5E-05
 
     net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
@@ -83,8 +84,8 @@ if __name__ == '__main__':
 
     print(model_path)
 
-    test_accuracy(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path)
+    test_accuracy(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path, random_seed)
 
-    measure_speed(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path)
+    measure_speed(test_filename, feature_cols, label_cols, nn_layer_sizes, model_path, random_seed)
 
     
