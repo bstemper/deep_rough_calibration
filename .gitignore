@@ -20,6 +20,5 @@
 *.tikz
 
 # Folders
-
 computations/
 computations_toy/

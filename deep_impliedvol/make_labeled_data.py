@@ -99,7 +99,7 @@ def main():
 if __name__ == '__main__':
 
     # Declare seed for sampling from parameter regions.
-    np.random.seed(2)
+    np.random.seed()
 
     # Fixed parameters.
     S = 1           # spot
@@ -107,12 +107,12 @@ if __name__ == '__main__':
     flag = 'c'
 
     # Varying parameters.
-    K_bounds = [0.75, 1.25]     # strike
-    tau_bounds = [0, 90/365]    # time to maturity 
-    vol_bounds = [1E-4, 2]      # volatility
+    K_bounds = [0.8, 1.2]     # strike
+    tau_bounds = [0, 0.25]    # time to maturity 
+    vol_bounds = [0.01, 2]      # volatility
 
     # Other parameters
-    csv_file_name = 'test_uniform_3d'
+    csv_file_name = 'validation_uniform'
     nb_samples = 10**5
   
     main()
