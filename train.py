@@ -7,7 +7,7 @@ from neural_network import rank1_ff_nn
 
 
 def train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
-          mini_batch_size, log_name, print_train=False):
+          mini_batch_size, log_name, print_log=False):
 
     # Initialization.
     tf.reset_default_graph()
@@ -71,21 +71,22 @@ def train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs,
             writer.add_summary(validation_summary, epoch)
 
             # Printing accuracies at different levels to see training of NN.
-            loss, acc_2pc, acc_1pc = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=val_feed_dict)
+            train_results = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=train_feed_dict)
+            val_results = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=val_feed_dict)
             
             with open(log_name, "a") as log_file:
-                log_file.write('Epoch: %i, loss: %f, acc2pc: %f, acc1pc: %f \n'
-                                % (epoch, loss, acc_2pc, acc_1pc))
+                log_file.write('Epoch: %i, train loss/acc2pc/acc1pc: %s, validation loss/acc2pc/acc1pc: %s \n'
+                                % (epoch, train_results, val_results))
             
-            if print_train == True:
-                print('Epoch: ', epoch, 'loss:', loss, 'acc2pc: ', acc_2pc, 
-                      'acc1pc: ', acc_1pc)
+            if print_log == True:
+                print('Epoch: %i, train loss/acc2pc/acc1pc: %s, validation loss/acc2pc/acc1pc: %s'
+                        % (epoch, train_results, val_results))
 
             # Save checkpoint files for reuse later.
             saver.save(sess, save_path=hyp_param_settings + '/', global_step=epoch)
 
-            # Stop performing training cycles if network is accurate enough.
-            if acc_1pc > 0.99:
+            # Stop performing training cycles if network performs well on validation set.
+            if val_results[2] > 0.99:
 
                 break
 
