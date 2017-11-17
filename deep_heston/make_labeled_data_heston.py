@@ -3,6 +3,7 @@
 
 import numpy as np
 import pandas as pd
+import rpy2
 import rpy2.robjects as robjects
 import numba
 from py_vollib.black_scholes.implied_volatility import implied_volatility
@@ -11,6 +12,8 @@ from py_lets_be_rational.exceptions import BelowIntrinsicException
 r = robjects.r
 r.source("heston.R")
 r_pricer = r('HestonCallClosedForm')
+
+# Buggy improve
 
 
 def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
@@ -23,7 +26,7 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
     :param rho: correlation between stock and vol
     :param v0: intial volatility
     :param r: risk-free interest rate
-    :param tau: time to maturity (year = 250 days)
+    :param tau: time to maturity (year = 365 days)
     :param S0: initial share price
     :param K: strike price
 
@@ -32,17 +35,29 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
 
     """
 
-    # Compute Heston price using Closed Form Solution R pricer. 
-    price = r_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)[0]
+    # Compute Heston price using Closed Form Solution R pricer.
+    try:
+        price = r_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)[0]
+
+    except rpy2.rinterface.RRuntimeError:
+
+        print('R Runtime Error with parameters:', lambd, vbar, eta, rho, 
+              v0, r, tau, S0, K)
+
+        price = None
+        iv = None
 
     # Convert price to Black-Scholes implied volatility.
-    try:
 
-        iv = implied_volatility(price, S0, K, tau, r, 'c')
+    if price is not None:
 
-    except BelowIntrinsicException:
+        try:
 
-        iv = None
+            iv = implied_volatility(price, S0, K, tau, r, 'c')
+
+        except BelowIntrinsicException:
+
+            iv = None
 
     return price, iv
 
@@ -87,38 +102,35 @@ def make_batch(nb_samples):
 
             K = np.random.uniform(K_bounds[0], K_bounds[1])
 
-            # Check for Feller's condition. 
-            if 2 * lambd * vbar > eta**2:
+            # Calculate Black-Scholes implied vol from Heston price.
+            price, iv = heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)
 
-                # Calculate Black-Scholes implied vol from Heston price.
-                price, iv = heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)
+            if iv is not None:
 
-                if iv is not None:
+                data[count, 0] = lambd
+                data[count, 1] = vbar
+                data[count, 2] = eta
+                data[count, 3] = rho
+                data[count, 4] = v0
+                data[count, 5] = tau
+                data[count, 6] = K
+                data[count, 7] = iv
 
-                    data[count, 0] = lambd
-                    data[count, 1] = vbar
-                    data[count, 2] = eta
-                    data[count, 3] = rho
-                    data[count, 4] = v0
-                    data[count, 5] = tau
-                    data[count, 6] = K
-                    data[count, 7] = iv
+                print('Count %i/%i' % (count + 1, nb_samples))
 
-                    print('Count %i/%i' % (count + 1, nb_samples))
+                # Increase running counter.
+                count += 1
 
-                    # Increase running counter.
-                    count += 1
+            # Implied volatility function returns exception.
+            else:
 
-                # Implied volatility function returns exception.
-                else:
+                # Collect all necessary information to judge why it failed.
+                error_data = (lambd, vbar, eta, rho, v0, r, tau, S0, K, 
+                              price, np.max(S0 - K, 0), price < np.max(S0 - K), 
+                              np.abs(price) < 1E-5, 
+                              (price < np.max(S0 - K)) or (np.abs(price) < 1E-5))
 
-                    # Collect all necessary information to judge why it failed.
-                    error_data = (lambd, vbar, eta, rho, v0, r, tau, S0, K, 
-                                  price, S0 - K, price < S0 - K, 
-                                  np.abs(price) < 1E-5, 
-                                  (price < S0 - K) or (np.abs(price) < 1E-5))
-
-                    log.write("%s \n" % repr(error_data))
+                log.write("%s \n" % repr(error_data))
 
     return data
 
@@ -135,7 +147,7 @@ def main():
 if __name__ == '__main__':
 
     # Declare seed for sampling from parameter regions.
-    np.random.seed(1337)
+    np.random.seed()
 
     # Standardised parameters
     S0 = 1
@@ -149,11 +161,11 @@ if __name__ == '__main__':
     v0_bounds = [0, 1]
 
     # Option parameter bounds (based on traded option data)
-    tau_bounds = [0, 90/365]
-    K_bounds = [0.75, 1.25]
+    tau_bounds = [0, 0.25]
+    K_bounds = [0.8, 1.2]
 
     # Other parameters
-    csv_file_name = 'data_uniform_v1'
+    csv_file_name = 'labeled_data/train_uniform'
     nb_samples = 10**6
 
     main()
