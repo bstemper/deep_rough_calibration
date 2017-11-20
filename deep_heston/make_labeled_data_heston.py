@@ -13,9 +13,6 @@ r = robjects.r
 r.source("heston.R")
 r_pricer = r('HestonCallClosedForm')
 
-# Buggy improve
-
-
 def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
     """
     Computes European Call price under Heston dynamics with closedform solution.
@@ -34,22 +31,9 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
     :rtype: float, float
 
     """
-
-    # Compute Heston price using Closed Form Solution R pricer.
+    
     try:
         price = r_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)[0]
-
-    except rpy2.rinterface.RRuntimeError:
-
-        print('R Runtime Error with parameters:', lambd, vbar, eta, rho, 
-              v0, r, tau, S0, K)
-
-        price = None
-        iv = None
-
-    # Convert price to Black-Scholes implied volatility.
-
-    if price is not None:
 
         try:
 
@@ -57,7 +41,17 @@ def heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K):
 
         except BelowIntrinsicException:
 
+            print('Below Intrinsic Exception with parameters:', lambd, vbar, 
+                   eta, rho, v0, r, tau, S0, K)
+
             iv = None
+
+    except rpy2.rinterface.RRuntimeError:
+
+        print('R Runtime Error with parameters:', lambd, vbar, eta, rho, 
+              v0, r, tau, S0, K)
+
+        price, iv = None, None
 
     return price, iv
 
@@ -79,7 +73,7 @@ def make_batch(nb_samples):
     # Calculate Heston prices and associated implied volatilities.
     count = 0
 
-    with open("%s_errors.csv" % csv_file_name, "a") as log:
+    with open("%s_errors.csv" % csv_file_name, "w") as log:
 
         log.write("lambda, vbar, eta, rho, v0, r, tau, S0, K, price, \
                    intrinsic, price < intrinsic, abs(price) < 1E-5, OK?  \n" )
@@ -105,6 +99,7 @@ def make_batch(nb_samples):
             # Calculate Black-Scholes implied vol from Heston price.
             price, iv = heston_pricer(lambd, vbar, eta, rho, v0, r, tau, S0, K)
 
+            # Running through possible cases returned by heston_pricer.
             if iv is not None:
 
                 data[count, 0] = lambd
@@ -121,14 +116,19 @@ def make_batch(nb_samples):
                 # Increase running counter.
                 count += 1
 
-            # Implied volatility function returns exception.
-            else:
+            elif price is not None:
 
                 # Collect all necessary information to judge why it failed.
                 error_data = (lambd, vbar, eta, rho, v0, r, tau, S0, K, 
                               price, np.max(S0 - K, 0), price < np.max(S0 - K), 
                               np.abs(price) < 1E-5, 
                               (price < np.max(S0 - K)) or (np.abs(price) < 1E-5))
+
+                log.write("%s \n" % repr(error_data))
+
+            else:
+
+                error_data = (lambd, vbar, eta, rho, v0, r, tau, S0, K)
 
                 log.write("%s \n" % repr(error_data))
 
@@ -165,8 +165,8 @@ if __name__ == '__main__':
     K_bounds = [0.8, 1.2]
 
     # Other parameters
-    csv_file_name = 'labeled_data/train_uniform'
-    nb_samples = 10**6
+    csv_file_name = 'labeled_data/test_uniform'
+    nb_samples = 10**5
 
     main()
 
