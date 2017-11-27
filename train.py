@@ -6,15 +6,15 @@ from helpers import import_labeled_csv_data
 from neural_network import rank1_ff_nn
 
 
-def train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
-          mini_batch_size, log_name, print_log=False):
+def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed, 
+          nb_epochs, mini_batch_size, log_name, print_log=False):
 
     # Initialization.
     tf.reset_default_graph()
     np.random.seed(random_seed)
 
     # Build the computational graph of a feed-forward NN.
-    nn = rank1_ff_nn(train_set.nb_features, nn_layer_sizes, train_set.nb_labels,
+    nn = rank1_ff_nn(train_tuple.nb_features, nn_layer_sizes, train_tuple.nb_labels,
                      random_seed)
 
     # Build the training op.
@@ -29,8 +29,8 @@ def train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs,
     summary = tf.summary.merge_all()
 
     # Build the validation set dictionary.
-    val_feed_dict = { nn.inputs : validation_set.features,
-                      nn.labels : validation_set.labels}
+    val_feed_dict = { nn.inputs : validation_tuple.features,
+                      nn.labels : validation_tuple.labels}
 
     # Run session through the computational graph.
     with tf.Session() as sess:
@@ -49,18 +49,18 @@ def train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs,
         for epoch in range(nb_epochs):
 
             # Compute how many minibatches to run through.
-            nb_mini_batches = int(train_set.nb_samples/mini_batch_size)
+            nb_mini_batches = int(train_tuple.nb_samples/mini_batch_size)
 
             # Do random shuffling of the indices of training samples.
-            shuffled_indices = np.random.permutation(train_set.nb_samples)
+            shuffled_indices = np.random.permutation(train_tuple.nb_samples)
 
             # Running through individual minibatches and doing backprop.
             for i in range(nb_mini_batches):
 
                 mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
 
-                train_feed_dict = { nn.inputs : train_set.features[mini_batch_indices, :],
-                                    nn.labels: train_set.labels[mini_batch_indices, :]
+                train_feed_dict = { nn.inputs : train_tuple.features[mini_batch_indices, :],
+                                    nn.labels: train_tuple.labels[mini_batch_indices, :]
                                    }
 
                 # Run training step (which includes backpropagation).

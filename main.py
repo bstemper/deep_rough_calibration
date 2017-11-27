@@ -1,7 +1,7 @@
 import os
 import sys
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 from helpers import import_labeled_csv_data
 from neural_network import rank1_ff_nn
 from train import train
@@ -21,20 +21,18 @@ random_seed = 42
 
 def main_single():
 
-	nb_epochs = 100000
-	mini_batch_size = 2
-	nn_layer_sizes = [32, 16]
-	lr = 0.005
+	nb_epochs = 1000
+	mini_batch_size = 100
+	nn_layer_sizes = [16, 16, 16]
+	lr = 5.99533E-05
 	log_name = 'log_test.txt'
 	
 	# Read training and validation data named tuples into memory.
-	train_set = import_labeled_csv_data(train_filename, feature_cols, 
-										label_cols)
+	train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
 
-	validation_set = import_labeled_csv_data(validation_filename, feature_cols, 
-											 label_cols)
+	validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
 	
-	train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
+	train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed, nb_epochs, 
 	  mini_batch_size, log_name, print_log=True)
 
 def main_random_search():
@@ -46,10 +44,10 @@ def main_random_search():
 	log_name = 'hyp_sweep_log.txt'
 
 	# Read training and validation data named tuples into memory.
-	train_set = import_labeled_csv_data(train_filename, feature_cols, 
+	train_tuple = import_labeled_csv_data(train_filename, feature_cols, 
 										label_cols)
 
-	validation_set = import_labeled_csv_data(validation_filename, feature_cols, 
+	validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, 
 											 label_cols)
 
 	nn_combinations = [[2**i, 2**j, 2**k] for i in range(2, max_exp +1) 
@@ -59,11 +57,11 @@ def main_random_search():
 
 		for lr in 10**np.random.uniform(-6, 1, nb_learning_rates):
 
-			train(train_set, validation_set, nn_layer_sizes, lr, random_seed, nb_epochs, 
+			train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed, nb_epochs, 
 	  			  mini_batch_size, log_name, print_log=True)
 
 
 if __name__ == '__main__':
 	
-	main_random_search()
+	main_single()
 
