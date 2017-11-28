@@ -7,21 +7,21 @@ from neural_network import rank1_ff_nn
 
 
 def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed, 
-          nb_epochs, mini_batch_size, log_name, print_log=False):
+          nb_epochs, mini_batch_size, log_df, print_log=False):
 
     # Initialization.
     tf.reset_default_graph()
     np.random.seed(random_seed)
 
     # Build the computational graph of a feed-forward NN.
-    nn = rank1_ff_nn(train_tuple.nb_features, nn_layer_sizes, train_tuple.nb_labels,
-                     random_seed)
+    nn = rank1_ff_nn(train_tuple.nb_features, nn_layer_sizes, 
+                     train_tuple.nb_labels, random_seed)
 
     # Build the training op.
     with tf.name_scope('training'):
         train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
 
-    # Print neural network configuration.
+    # Stringify network configuration.
     net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
     hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
 
@@ -40,10 +40,6 @@ def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed,
         sess.run(init)
         saver = tf.train.Saver()
         writer = tf.summary.FileWriter(hyp_param_settings, graph=sess.graph)
-
-        with open(log_name, "a") as log_file:
-
-            log_file.write(hyp_param_settings + '\n')
     
         # Perform training cycles.
         for epoch in range(nb_epochs):
@@ -70,17 +66,17 @@ def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed,
             validation_summary = sess.run(summary, feed_dict = val_feed_dict)
             writer.add_summary(validation_summary, epoch)
 
-            # Printing accuracies at different levels to see training of NN.
+            # Writing intermediate results to pandas log df.
             train_results = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=train_feed_dict)
             val_results = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=val_feed_dict)
+
+            log_data = nn_layer_sizes + [lr, epoch] + train_results + val_results
             
-            with open(log_name, "a") as log_file:
-                log_file.write('Epoch: %i, train loss/acc2pc/acc1pc: %s, validation loss/acc2pc/acc1pc: %s \n'
-                                % (epoch, train_results, val_results))
+            log_df.loc[log_df.shape[0]] = log_data
             
             if print_log == True:
                 print('Epoch: %i, train loss/acc2pc/acc1pc: %s, validation loss/acc2pc/acc1pc: %s'
-                        % (epoch, train_results, val_results))
+                       % (epoch, train_results, val_results))
 
             # Save checkpoint files for reuse later.
             saver.save(sess, save_path=hyp_param_settings + '/', global_step=epoch)
@@ -92,4 +88,6 @@ def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed,
 
         # Saving final model.
         save_path = saver.save(sess, hyp_param_settings + '/' + 'final_model')
+
+        return log_df
     
