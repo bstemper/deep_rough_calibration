@@ -2,7 +2,7 @@ import os
 import sys
 import tensorflow as tf
 import numpy as np
-from helpers import import_labeled_csv_data
+from helpers import load_labeled_csv
 from neural_network import rank1_ff_nn
 
 

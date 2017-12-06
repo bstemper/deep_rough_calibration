@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-from helpers import import_labeled_csv_data, create_log_df
+from helpers import load_labeled_csv, create_log_df
 from neural_network import rank1_ff_nn
 from train import train
 
@@ -29,8 +29,8 @@ def main_single():
     log_name = 'run1'
     
     # Read training and validation data named tuples into memory.
-    train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
-    validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
+    train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
+    validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
 
     # Stringify network configuration.
     net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
@@ -58,8 +58,8 @@ def main_multiple():
     learning_rates = 10**np.random.uniform(-8, -4, 10)
 
     # Read training and validation data named tuples into memory.
-    train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
-    validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
+    train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
+    validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
 
     # Run backpropagation training through all combinations.
     for nn_layer_sizes in nn_combinations:
@@ -90,8 +90,8 @@ def main_random_search():
     log_name = 'run0'
 
     # Read training and validation data named tuples into memory.
-    train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
-    validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
+    train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
+    validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
 
     nn_combinations = [[2**i, 2**j, 2**k] for i in range(2, max_exp +1) 
                         for j in range(2, i+1) for k in range(2, j+1)]

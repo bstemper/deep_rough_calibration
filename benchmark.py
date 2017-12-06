@@ -2,7 +2,7 @@ import os
 import sys
 import tensorflow as tf
 import time
-from helpers import import_labeled_csv_data
+from helpers import load_labeled_csv
 from neural_network import rank1_ff_nn
 
 
@@ -15,7 +15,7 @@ def test_accuracy(filename, feature_cols, label_cols, nn_layer_sizes, model_path
     tf.reset_default_graph()
 
     # Read test data named tuple into memory. 
-    test_set = import_labeled_csv_data(filename, feature_cols, label_cols)
+    test_set = load_labeled_csv(filename, feature_cols, label_cols)
 
     # Build the computational graph of a feed-forward NN.
     nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels, random_seed)
@@ -40,7 +40,7 @@ def measure_speed(filename, feature_cols, label_cols, nn_layer_sizes, model_path
 
     # Initialization.
     tf.reset_default_graph()
-    test_set = import_labeled_csv_data(filename, feature_cols, label_cols)
+    test_set = load_labeled_csv(filename, feature_cols, label_cols)
     nn = rank1_ff_nn(test_set.nb_features, nn_layer_sizes, test_set.nb_labels, random_seed)
     saver = tf.train.Saver()
     test_feed_dict = {nn.inputs : test_set.features,

@@ -2,37 +2,46 @@ import pandas as pd
 from collections import namedtuple
 
 
-def import_labeled_csv_data(filename, feature_cols, label_cols):
+def load_labeled_csv(filename, feature_cols, label_cols):
     """
-    Imports .csv file with labeled data and returns preprocessed data tuple.
+    Load a .csv file with labeled data into memory. Processes data and returns
+    a named tuple with relevant data information.
 
-    Inputs
-    ------
-    filename:       filename with .csv (str), e.g. 'test.csv'
-    feature_cols:   list of indices of columns with features, e.g. [0, 1]
-    label_cols:     list of indices of columns with labels, e.g. [2, 3]
+    Arguments:
+    ----------
+        filename: string.
+            Filename with .csv (str), e.g. 'test.csv'.
+        feature_cols: list.
+            Indices of columns with features, e.g. [0, 1].
+        label_cols: list.
+            Indices of columns with labels, e.g. [2, 3].
 
-    Output
-    ------
-    data:           named tuple where
-
-    data.features:      features, (np array with (samples, features))
-    data.labels:        labels (np array with (samples, labels))
-    data.nb_features:   # features (int)
-    data.nb_labels:     # labels (int)
-    data.nb_samples:    # data samples (int)
+    Returns:
+    --------
+        data:   named tuple.
+            data.features: array-like, shape=[# samples, # features].
+                Features of the data set.
+            data.labels: array-like, shape=[# samples, # labels].
+                Labels of the data set.
+            data.nb_features:   integer. 
+                Number of features.
+            data.nb_labels: integer.
+                Number of labels.
+            data.nb_samples: integer.
+                Number of samples.
     """
 
-    data = namedtuple('data_set', ['features', 'labels', 'nb_features', 
+    data = namedtuple('data_set', ['features', 'labels', 'nb_features',
                       'nb_labels', 'nb_samples'])
 
-    data.features = pd.read_csv(filename, skiprows=0, usecols=feature_cols).values
+    raw_data = pd.read_csv(filename, skiprows=0).values
+    
+    data.features = raw_data[:, feature_cols]
+    data.labels = raw_data[:, label_cols]
 
-    data.labels = pd.read_csv(filename, skiprows=0, usecols=label_cols).values
-
-    data.nb_samples, data.nb_features = data.features.shape
-
-    data.nb_labels = data.labels.shape[1]
+    data.nb_features = len(feature_cols)
+    data.nb_labels = len(label_cols)
+    data.nb_samples = raw_data.shape[0]
 
     return data
 
@@ -62,7 +71,4 @@ def create_log_df(filename, layer_size):
     log_df = pd.DataFrame(columns=cols)
 
     return log_df
-
-
-
-
+    
