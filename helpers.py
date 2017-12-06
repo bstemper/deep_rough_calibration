@@ -54,7 +54,7 @@ def create_log_df(filename, layer_size):
     """
 
     hidden_cols = ['units_hidden%i' %i for i in range(1, layer_size + 1)]
-    cols = hidden_cols + ['learning_rate' , 'epoch', 'training_loss', 
+    cols = hidden_cols + ['learning_rate' , 'training_loss', 
                           'training_acc2pc', 'training_acc1pc', 
                           'validation_loss', 'validation_acc2pc', 
                           'validation_acc1pc']

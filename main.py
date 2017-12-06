@@ -22,57 +22,101 @@ random_seed = 42
 
 def main_single():
 
-	nb_epochs = 3
-	mini_batch_size = 100
-	nn_layer_sizes = [16, 16, 16]
-	lr = 5.99533E-05
-	log_name = 'test_log'
-	
-	# Read training and validation data named tuples into memory.
-	train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
-	validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
+    nb_epochs = 100
+    mini_batch_size = 100
+    nn_layer_sizes = [32, 32, 16]
+    lr = 5.34770E-05
+    log_name = 'run1'
+    
+    # Read training and validation data named tuples into memory.
+    train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
+    validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
 
-	# Create log dataframe object.
-	log_df = create_log_df(log_name, len(nn_layer_sizes))
+    # Stringify network configuration.
+    net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
+    hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
 
-	# Run backpropagation training.	
-	log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
-					 random_seed, nb_epochs, mini_batch_size, log_df, 
-					 print_log=True)
+    # Create log dataframe object.
+    log_df = create_log_df(log_name, len(nn_layer_sizes))
 
-	log_df.to_csv(log_name + '.csv')
+    # Run backpropagation training. 
+    log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
+                   random_seed, nb_epochs, mini_batch_size, log_df, 
+                   ckpt_dir = hyp_param_settings, print_log=True)
+
+    log_df.to_csv(hyp_param_settings + '/' + log_name + '.csv')
+
+def main_multiple():
+
+    nb_epochs = 10
+    mini_batch_size = 100
+    log_name = 'run0'
+    nb_hidden = 3
+
+    nn_combinations = [[32, 32, 16]]
+
+    learning_rates = 10**np.random.uniform(-8, -4, 10)
+
+    # Read training and validation data named tuples into memory.
+    train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
+    validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
+
+    # Run backpropagation training through all combinations.
+    for nn_layer_sizes in nn_combinations:
+
+        for lr in learning_rates:
+
+            # Create log dataframe object.
+            log_df = create_log_df(log_name, nb_hidden)
+
+            # Stringify network configuration.
+            net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
+            hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
+
+            log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
+                           random_seed, nb_epochs, mini_batch_size, log_df, 
+                           ckpt_dir=None, print_log=True)
+
+            log_df.to_csv(hyp_param_settings + '/' + log_name + '.csv')
+
 
 def main_random_search():
 
-	nb_epochs = 2
-	mini_batch_size = 100
-	max_exp = 9
-	nb_learning_rates = 10
-	nb_hidden = 3
-	log_name = 'hyp_sweep_log'
+    nb_epochs = 10
+    mini_batch_size = 100
+    max_exp = 9
+    nb_learning_rates = 10
+    nb_hidden = 3
+    log_name = 'run0'
 
-	# Read training and validation data named tuples into memory.
-	train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
-	validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
+    # Read training and validation data named tuples into memory.
+    train_tuple = import_labeled_csv_data(train_filename, feature_cols, label_cols)
+    validation_tuple = import_labeled_csv_data(validation_filename, feature_cols, label_cols)
 
-	nn_combinations = [[2**i, 2**j, 2**k] for i in range(2, max_exp +1) 
-						for j in range(2, i+1) for k in range(2, j+1)]
+    nn_combinations = [[2**i, 2**j, 2**k] for i in range(2, max_exp +1) 
+                        for j in range(2, i+1) for k in range(2, j+1)]
 
-	# Create log dataframe object.
-	log_df = create_log_df(log_name, nb_hidden)
+    learning_exps = np.random.uniform(-8, -4, nb_learning_rates)
 
-	# Run backpropagation training through all combinations.
-	for nn_layer_sizes in nn_combinations:
+    # Run backpropagation training through all combinations.
+    for nn_layer_sizes in nn_combinations:
 
-		for lr in 10**np.random.uniform(-6, 1, nb_learning_rates):
+        for lr in 10**learning_exps:
 
-			log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
-				  		   random_seed, nb_epochs, mini_batch_size, log_df, 
-				  		   print_log=True)
+            # Create log dataframe object.
+            log_df = create_log_df(log_name, nb_hidden)
 
-			log_df.to_csv(log_name + '.csv')
+            # Stringify network configuration.
+            net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
+            hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
+
+            log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
+                           random_seed, nb_epochs, mini_batch_size, log_df, 
+                           print_log=True)
+
+            log_df.to_csv(hyp_param_settings + '/' + log_name + '.csv')
 
 if __name__ == '__main__':
-	
-	main_random_search()
+    
+    main_single()
 

@@ -7,7 +7,8 @@ from neural_network import rank1_ff_nn
 
 
 def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed, 
-          nb_epochs, mini_batch_size, log_df, print_log=False):
+          nb_epochs, mini_batch_size, log_df, print_log=False,
+          ckpt_dir = None):
 
     # Initialization.
     tf.reset_default_graph()
@@ -35,12 +36,19 @@ def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed,
     # Run session through the computational graph.
     with tf.Session() as sess:
 
-        # Init.
-        init = tf.global_variables_initializer()
-        sess.run(init)
+        # Initialization
         saver = tf.train.Saver()
         writer = tf.summary.FileWriter(hyp_param_settings, graph=sess.graph)
-    
+
+        if ckpt_dir is not None:
+
+            saver.restore(sess, tf.train.latest_checkpoint(ckpt_dir))
+
+        else:
+
+            init = tf.global_variables_initializer()
+            sess.run(init)
+        
         # Perform training cycles.
         for epoch in range(nb_epochs):
 
@@ -55,9 +63,10 @@ def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed,
 
                 mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
 
-                train_feed_dict = { nn.inputs : train_tuple.features[mini_batch_indices, :],
-                                    nn.labels: train_tuple.labels[mini_batch_indices, :]
-                                   }
+                train_feed_dict = { 
+                    nn.inputs : train_tuple.features[mini_batch_indices, :],
+                    nn.labels: train_tuple.labels[mini_batch_indices, :]
+                }
 
                 # Run training step (which includes backpropagation).
                 sess.run([train_step], feed_dict=train_feed_dict)
@@ -67,19 +76,18 @@ def train(train_tuple, validation_tuple, nn_layer_sizes, lr, random_seed,
             writer.add_summary(validation_summary, epoch)
 
             # Writing intermediate results to pandas log df.
-            train_results = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=train_feed_dict)
-            val_results = sess.run([nn.loss, nn.acc_2pc, nn.acc_1pc], feed_dict=val_feed_dict)
+            train_results = sess.run([nn.loss, nn.acc_2pc, 
+                                      nn.acc_1pc], feed_dict=train_feed_dict)
+            val_results = sess.run([nn.loss, nn.acc_2pc, 
+                                    nn.acc_1pc], feed_dict=val_feed_dict)
 
-            log_data = nn_layer_sizes + [lr, epoch] + train_results + val_results
+            log_data = nn_layer_sizes + [lr] + train_results + val_results
             
             log_df.loc[log_df.shape[0]] = log_data
             
             if print_log == True:
                 print('Epoch: %i, train loss/acc2pc/acc1pc: %s, validation loss/acc2pc/acc1pc: %s'
                        % (epoch, train_results, val_results))
-
-            # Save checkpoint files for reuse later.
-            saver.save(sess, save_path=hyp_param_settings + '/', global_step=epoch)
 
             # Stop performing training cycles if network performs well on validation set.
             if val_results[2] > 0.99:
