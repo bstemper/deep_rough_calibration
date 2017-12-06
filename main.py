@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-from helpers import load_labeled_csv, create_log_df
+from helpers import load_labeled_csv, make_log_df
 from neural_network import rank1_ff_nn
 from train import train
 
@@ -37,7 +37,7 @@ def main_single():
     hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
 
     # Create log dataframe object.
-    log_df = create_log_df(log_name, len(nn_layer_sizes))
+    log_df = make_log_df(len(nn_layer_sizes))
 
     # Run backpropagation training. 
     log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
@@ -67,7 +67,7 @@ def main_multiple():
         for lr in learning_rates:
 
             # Create log dataframe object.
-            log_df = create_log_df(log_name, nb_hidden)
+            log_df = make_log_df(nb_hidden)
 
             # Stringify network configuration.
             net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
@@ -104,7 +104,7 @@ def main_random_search():
         for lr in 10**learning_exps:
 
             # Create log dataframe object.
-            log_df = create_log_df(log_name, nb_hidden)
+            log_df = make_log_df(nb_hidden)
 
             # Stringify network configuration.
             net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")

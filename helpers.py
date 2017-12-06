@@ -4,8 +4,9 @@ from collections import namedtuple
 
 def load_labeled_csv(filename, feature_cols, label_cols):
     """
-    Load a .csv file with labeled data into memory. Processes data and returns
-    a named tuple with relevant data information.
+    Loads a .csv file with labeled data into memory. CSV File has to contain
+    samples in rows and features and labels in columns. The utility function
+    then returns a named tuple with relevant information about data set.
 
     Arguments:
     ----------
@@ -46,27 +47,31 @@ def load_labeled_csv(filename, feature_cols, label_cols):
     return data
 
 
-def create_log_df(filename, layer_size):
+def make_log_df(nb_hidden_layers):
     """
-    Creates and returns a Pandas DataFrame Object that will be used to log
-    training progress across training and validation data.
+    Utility function that prepares a Pandas DataFrame that may be used as a 
+    log file to track training and validation losses and accuracies for a
+    fully connected neural network with a specified number of hidden layers.
 
-    Input
-    -----
-    filename:   filename (str)
-    layer_size: number of hidden layers (int)
+    Arguments:
+    ----------
+        nb_hidden_layers: integer.
+            Number of hidden layers in fully connected neural network.
 
-    Output
-    ------
-    log_df      Log File (Pandas DataFrame)
-
+    Returns:
+    --------
+        log_df: pandas dataframe, shape=[, nb_layers + 8]
+            Pandas df that serves as a log file.
     """
 
-    hidden_cols = ['units_hidden%i' %i for i in range(1, layer_size + 1)]
-    cols = hidden_cols + ['learning_rate' , 'training_loss', 
-                          'training_acc2pc', 'training_acc1pc', 
-                          'validation_loss', 'validation_acc2pc', 
-                          'validation_acc1pc']
+    # Make lists of column names to be included in df.
+    units_hidden = ['# layer %i' %i for i in range(1, nb_hidden_layers + 1)]
+    params = ['lr'] + units_hidden
+    train_cols = ['train_loss', 'train_acc2pc', 'train_acc1pc']
+    val_cols = ['val_loss', 'val_acc2pc', 'val_acc1pc']
+ 
+    # Merge lists of column names in one big list for df creation.
+    cols = ['epoch'] + params + train_cols + val_cols
 
     log_df = pd.DataFrame(columns=cols)
 
