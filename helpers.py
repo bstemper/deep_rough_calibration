@@ -76,4 +76,44 @@ def make_log_df(nb_hidden_layers):
     log_df = pd.DataFrame(columns=cols)
 
     return log_df
+
+
+def make_hyper_param_str(hyper_params):
+    """
+    Takes a list of hyperparameters for a fully connected neural network, i.e. 
+    the number of units per layer, the learning rate and the size of the mini-
+    batches and turns them into an identifier string.
+
+    Arguments:
+    ----------
+    hyper_params: list.
+        List of hyperparameters of a fully connected neural network.
+            layer_sizes: array-like, shape=[, # layers]
+                Number of units per layer, e.g. [32,16,8,4].
+            learning_rate: float.
+                Learning rate used for backpropagation.
+            mini_batch_size: integer.
+                Size of individual mini-batches used for backpropagation.
+
+    Returns:
+    --------
+    hyper_param_str: string.
+        String encoding all hyperparameter information.
+    """
+
+    layer_sizes, lr, mini_batch_size = hyper_params
+
+    layer_sizes = str(layer_sizes)[1:-1].replace(" ", "")
+
+    hyper_param_str = "nn=%s_lr=%.6E_mbs=%s" % (layer_sizes, lr, mini_batch_size)
+
+    return hyper_param_str
+
+
+
+
+
+
+
+
     
