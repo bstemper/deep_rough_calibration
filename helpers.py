@@ -86,19 +86,19 @@ def make_hyper_param_str(hyper_params):
 
     Arguments:
     ----------
-    hyper_params: list.
-        List of hyperparameters of a fully connected neural network.
-            layer_sizes: array-like, shape=[, # layers]
-                Number of units per layer, e.g. [32,16,8,4].
-            learning_rate: float.
-                Learning rate used for backpropagation.
-            mini_batch_size: integer.
-                Size of individual mini-batches used for backpropagation.
+        hyper_params: list.
+            List of hyperparameters of a fully connected neural network.
+                layer_sizes: array-like, shape=[, # layers]
+                    Number of units per layer, e.g. [32,16,8,4].
+                learning_rate: float.
+                    Learning rate used for backpropagation.
+                mini_batch_size: integer.
+                    Size of individual mini-batches used for backpropagation.
 
     Returns:
     --------
-    hyper_param_str: string.
-        String encoding all hyperparameter information.
+        hyper_param_str: string.
+            String encoding all hyperparameter information.
     """
 
     layer_sizes, lr, mini_batch_size = hyper_params
@@ -109,11 +109,20 @@ def make_hyper_param_str(hyper_params):
 
     return hyper_param_str
 
+def verbose_print(verbose, str_to_print):
+    """
+    Prints 'str_to_print' if verbose is True and nothing otherwise.
 
+    Arguments:
+    ----------
+        verbose: boolean.
+            If verbose=True, then print string, otherwise don't.
+        str_to_print: string.
+            String to print.
+    """
+    if verbose == True:
 
-
-
-
-
+            print(str_to_print)
 
     
+
