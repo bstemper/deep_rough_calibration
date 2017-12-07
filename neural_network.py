@@ -14,7 +14,7 @@ def fc_layer(input, dim_in, dim_out, random_seed, name='fc_layer'):
         return nonlinearity
 
 
-def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels, random_seed):
+def fully_connected_nn(nb_features, layer_sizes, nb_labels, random_seed):
 
     nn = namedtuple('nn', ['inputs', 'labels', 'pred', 'loss'])
 
@@ -25,19 +25,19 @@ def rank1_ff_nn(nb_features, nn_layer_sizes, nb_labels, random_seed):
     nn.labels = tf.placeholder(tf.float32, [None, nb_labels], name='labels')
 
     # Build the computational graph consisting of a feed forward NN. 
-    nb_hidden_layers = len(nn_layer_sizes)
+    nb_hidden_layers = len(layer_sizes)
 
     layers = []
 
-    layers.append(fc_layer(nn.inputs, nb_features, nn_layer_sizes[0], random_seed,
+    layers.append(fc_layer(nn.inputs, nb_features, layer_sizes[0], random_seed,
                            'fc_hidden0'))
 
     for i in range(nb_hidden_layers - 1):
 
-        layers.append(fc_layer(layers[i], nn_layer_sizes[i], 
-                      nn_layer_sizes[i+1], random_seed, 'fc_hidden%s' % str(i+1)))
+        layers.append(fc_layer(layers[i], layer_sizes[i], 
+                      layer_sizes[i+1], random_seed, 'fc_hidden%s' % str(i+1)))
 
-    nn.pred = fc_layer(layers[-1], nn_layer_sizes[-1], nb_labels, random_seed, 'pred')
+    nn.pred = fc_layer(layers[-1], layer_sizes[-1], nb_labels, random_seed, 'pred')
 
     layers.append(nn.pred)
 

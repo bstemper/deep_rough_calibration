@@ -66,12 +66,12 @@ def make_log_df(nb_hidden_layers):
 
     # Make lists of column names to be included in df.
     units_hidden = ['# layer %i' %i for i in range(1, nb_hidden_layers + 1)]
-    params = ['lr'] + units_hidden
+    params = units_hidden + ['lr']
     train_cols = ['train_loss', 'train_acc2pc', 'train_acc1pc']
     val_cols = ['val_loss', 'val_acc2pc', 'val_acc1pc']
  
     # Merge lists of column names in one big list for df creation.
-    cols = ['epoch'] + params + train_cols + val_cols
+    cols =  params + ['epoch'] + train_cols + val_cols
 
     log_df = pd.DataFrame(columns=cols)
 
@@ -123,6 +123,4 @@ def verbose_print(verbose, str_to_print):
     if verbose == True:
 
             print(str_to_print)
-
-    
 
