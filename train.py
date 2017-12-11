@@ -163,7 +163,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
             verbose_print(verbose, epoch_res)
 
             # Checking conditions for breaking the training
-            cond1 = nn_is_fully_trained(log_df)
+            cond1 = nn_is_fully_trained(log_df, 0.99)
             cond2 = nn_does_not_learn(log_df)
 
             if (cond1 or cond2) == True:
