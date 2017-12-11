@@ -162,8 +162,11 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
 
             verbose_print(verbose, epoch_res)
 
-            # Define conditions under which backpropagation stops.
-            if validation_results[2] > 0.99:
+            # Checking conditions for breaking the training
+            cond1 = nn_is_fully_trained(log_df)
+            cond2 = nn_does_not_learn(log_df)
+
+            if (cond1 or cond2) == True:
 
                 break
 
@@ -171,4 +174,4 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
         save_path = saver.save(sess, hyper_param_str + '/final_model')
 
         return log_df, validation_results
-    
+
