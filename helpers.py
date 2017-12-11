@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from collections import namedtuple
 
 
@@ -109,6 +110,7 @@ def make_hyper_param_str(hyper_params):
 
     return hyper_param_str
 
+
 def verbose_print(verbose, str_to_print):
     """
     Prints 'str_to_print' if verbose is True and nothing otherwise.
@@ -120,7 +122,70 @@ def verbose_print(verbose, str_to_print):
         str_to_print: string.
             String to print.
     """
+
     if verbose == True:
 
             print(str_to_print)
+
+
+def nn_is_fully_trained(df, threshold):
+    """
+    Checks from df whether acc2pc on the validation set exceeds the given
+    threshold, i.e. whether the network is fully trained. If yes, then returns
+    True, otherwise False.
+
+    Argument:
+    ---------
+        df: pandas dataframe, shape=[, nb_layers + 8].
+            Pandas df log file obtained from backpropagation training.
+        threshold: float, between 0 and 1.
+            Percentage threshold for acc2pc on validation set for network to 
+            stop learning.
+
+    Returns:
+    --------
+        Boolean.
+            True if accuracy achieved, False otherwise.
+    """
+
+    if df.loc[df.shape[0] - 1, 'val_acc2pc'] >= threshold:
+
+        print('Neural network fully trained.')
+
+        return True
+
+    else:
+
+        return False
+
+
+def nn_does_not_learn(df):
+    """
+    Checks from df whether the NN does not learn, i.e. if the mean of the 
+    accuracies on the validation set in the last three epochs is 0.
+    If yes, then function returns True, False otherwise.
+
+    Arguments:
+    ----------
+        df: pandas dataframe, shape=[, nb_layers + 8]
+            Pandas df log file obtained from backpropagation training.
+
+    Returns:
+    --------
+        Boolean.
+            True if NN does not learn, False otherwise.
+    """
+
+    # Last epoch of training.
+    last_ep = df.shape[0]
+
+    if last_ep >= 3 and np.mean(df.loc[last_ep-3:last_ep , 'val_acc2pc']) <= 0:
+
+        print('Neural network does not learn.')
+
+        return True
+
+    else: 
+
+        return False
 
