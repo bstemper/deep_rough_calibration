@@ -40,6 +40,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
                     Learning rate used for backpropagation.
                 mini_batch_size: integer.
                     Size of individual mini-batches used for backpropagation.
+                pkeep: float. Has to lie between 0 and 1.
+                    Probabability of keeping neurons in dropout.
         nb_epochs: integer.
             Number of epochs to train the network.
         random_seed: integer.
@@ -74,6 +76,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
     layer_sizes = hyper_params[0]
     lr = hyper_params[1]
     mini_batch_size = hyper_params[2]
+    pkeep = hyper_params[3]
 
     ## BUILDING THE COMPUTATIONAL GRAPH
 
@@ -116,7 +119,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
 
         # Define validation feed dictionary to be fed into NN for benchmarking.
         val_feed_dict = { nn.inputs : validation_tuple.features,
-                          nn.labels : validation_tuple.labels
+                          nn.labels : validation_tuple.labels,
+                          nn.pkeep  : 1
                         }
 
         ## RUN BACKPROPAGATION
@@ -137,8 +141,9 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
 
                 train_feed_dict = { 
                     nn.inputs : train_tuple.features[mini_batch_indices, :],
-                    nn.labels: train_tuple.labels[mini_batch_indices, :]
-                }
+                    nn.labels : train_tuple.labels[mini_batch_indices, :],
+                    nn.pkeep  : pkeep
+                    }
 
                 # Run training/backpropagation op.
                 sess.run([train_step], feed_dict=train_feed_dict)
@@ -148,22 +153,22 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
             writer.add_summary(validation_summary, epoch)
 
             # Writing intermediate results to pandas log df.
-            metrics_ops = [nn.loss, nn.acc_2pc, nn.acc_1pc]
+            metrics_ops = [nn.loss, nn.err_2pc, nn.err_1pc]
             train_results = sess.run(metrics_ops, feed_dict=train_feed_dict)
             validation_results = sess.run(metrics_ops, feed_dict=val_feed_dict)
 
-            log_data = layer_sizes + [lr, epoch] + train_results \
+            log_data = layer_sizes + [lr, pkeep, epoch] + train_results \
                        + validation_results
             log_df.loc[log_df.shape[0]] = log_data
             
             # If verbose is True, print intermediate results.
-            epoch_res = 'Ep %i: loss|acc2pc|acc1pc %s,  %s' \
+            epoch_res = 'Ep %i: loss|err2pc|err1pc %s,  %s' \
                         % (epoch, train_results, validation_results)
 
             verbose_print(verbose, epoch_res)
 
             # Checking conditions for breaking the training
-            cond1 = nn_is_fully_trained(log_df, 0.99)
+            cond1 = nn_is_fully_trained(log_df, 0.01)
             cond2 = nn_does_not_learn(log_df)
 
             if (cond1 or cond2) == True:

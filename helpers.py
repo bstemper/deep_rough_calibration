@@ -61,15 +61,15 @@ def make_log_df(nb_hidden_layers):
 
     Returns:
     --------
-        log_df: pandas dataframe, shape=[, nb_layers + 8]
+        log_df: pandas dataframe, shape=[, nb_layers + 9]
             Pandas df that serves as a log file.
     """
 
     # Make lists of column names to be included in df.
     units_hidden = ['# layer %i' %i for i in range(1, nb_hidden_layers + 1)]
-    params = units_hidden + ['lr']
-    train_cols = ['train_loss', 'train_acc2pc', 'train_acc1pc']
-    val_cols = ['val_loss', 'val_acc2pc', 'val_acc1pc']
+    params = units_hidden + ['lr', 'pkeep']
+    train_cols = ['train_loss', 'train_err2pc', 'train_err1pc']
+    val_cols = ['val_loss', 'val_err2pc', 'val_err1pc']
  
     # Merge lists of column names in one big list for df creation.
     cols =  params + ['epoch'] + train_cols + val_cols
@@ -82,8 +82,8 @@ def make_log_df(nb_hidden_layers):
 def make_hyper_param_str(hyper_params):
     """
     Takes a list of hyperparameters for a fully connected neural network, i.e. 
-    the number of units per layer, the learning rate and the size of the mini-
-    batches and turns them into an identifier string.
+    the number of units per layer, the learning rate, the size of the mini-
+    batches and the dropout rate and turns them into an identifier string.
 
     Arguments:
     ----------
@@ -95,6 +95,8 @@ def make_hyper_param_str(hyper_params):
                     Learning rate used for backpropagation.
                 mini_batch_size: integer.
                     Size of individual mini-batches used for backpropagation.
+                pkeep: float. Has to lie between 0 and 1.
+                    Probabability of keeping neurons in dropout.
 
     Returns:
     --------
@@ -102,11 +104,12 @@ def make_hyper_param_str(hyper_params):
             String encoding all hyperparameter information.
     """
 
-    layer_sizes, lr, mini_batch_size = hyper_params
+    layer_sizes, lr, mini_batch_size, pkeep = hyper_params
 
     layer_sizes = str(layer_sizes)[1:-1].replace(" ", "")
 
-    hyper_param_str = "nn=%s_lr=%.6E_mbs=%s" % (layer_sizes, lr, mini_batch_size)
+    hyper_param_str = "nn=%s_lr=%.6E_mbs=%s,pkeep=%.4f" % (layer_sizes, lr, 
+                                                         mini_batch_size, pkeep)
 
     return hyper_param_str
 
@@ -130,17 +133,19 @@ def verbose_print(verbose, str_to_print):
 
 def nn_is_fully_trained(df, threshold):
     """
-    Checks from df whether acc2pc on the validation set exceeds the given
-    threshold, i.e. whether the network is fully trained. If yes, then returns
-    True, otherwise False.
+    Checks from df whether err2pc, the percentage of predictions on the 
+    validation set that have relative error of more than 2%, is less than 
+    the given threshold. Threshold is chosen such that function acts as
+    indicator that network is fully trained. If network is assumed fully
+    trained, function returns True, otherwise returns False.
 
     Argument:
     ---------
-        df: pandas dataframe, shape=[, nb_layers + 8].
+        df: pandas dataframe, shape=[, nb_layers + 9].
             Pandas df log file obtained from backpropagation training.
         threshold: float, between 0 and 1.
-            Percentage threshold for acc2pc on validation set for network to 
-            stop learning.
+            Percentage threshold for err2pc on validation set under which
+            network is assumed to be fully trained.
 
     Returns:
     --------
@@ -148,7 +153,7 @@ def nn_is_fully_trained(df, threshold):
             True if accuracy achieved, False otherwise.
     """
 
-    if df.loc[df.shape[0] - 1, 'val_acc2pc'] >= threshold:
+    if df.loc[df.shape[0] - 1, 'val_err2pc'] <= threshold:
 
         print('Neural network fully trained.')
 
@@ -162,12 +167,12 @@ def nn_is_fully_trained(df, threshold):
 def nn_does_not_learn(df):
     """
     Checks from df whether the NN does not learn, i.e. if the mean of the 
-    accuracies on the validation set in the last three epochs is 0.
+    error rate on the validation set in the last five epochs is 100%.
     If yes, then function returns True, False otherwise.
 
     Arguments:
     ----------
-        df: pandas dataframe, shape=[, nb_layers + 8]
+        df: pandas dataframe, shape=[, nb_layers + 9]
             Pandas df log file obtained from backpropagation training.
 
     Returns:
@@ -179,7 +184,7 @@ def nn_does_not_learn(df):
     # Last epoch of training.
     last_ep = df.shape[0]
 
-    if last_ep >= 3 and np.mean(df.loc[last_ep-3:last_ep , 'val_acc2pc']) <= 0:
+    if last_ep >= 5 and np.mean(df.loc[last_ep-5:last_ep, 'val_err2pc']) >= 1:
 
         print('Neural network does not learn.')
 
