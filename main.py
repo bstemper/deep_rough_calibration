@@ -1,10 +1,8 @@
-import os
-import sys
+import os, sys
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-from helpers import load_labeled_csv, make_log_df
-from neural_network import rank1_ff_nn
+from helpers import *
 from train import train
 
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
@@ -18,33 +16,28 @@ validation_filename = 'deep_impliedvol/labeled_data/validation_uniform.csv'
 test_filename = 'deep_impliedvol/labeled_data/test_uniform.csv'
 feature_cols = [0, 1, 2]
 label_cols = [3]
-random_seed = 42
+random_seed = 1
 
 def main_single():
 
     nb_epochs = 100
-    mini_batch_size = 100
-    nn_layer_sizes = [32, 32, 16]
-    lr = 5.34770E-05
-    log_name = 'run1'
+    mini_batch_size = 128
+    layer_sizes = [2048]*3
+    lr = 1E-5
+    pkeep = 1
+    hyper_params = [layer_sizes, lr, mini_batch_size, pkeep]
+    hyper_param_str = make_hyper_param_str(hyper_params)
+    ckpt_dir = hyper_param_str
     
     # Read training and validation data named tuples into memory.
     train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
     validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
 
-    # Stringify network configuration.
-    net_config = str(nn_layer_sizes)[1:-1].replace(" ", "")
-    hyp_param_settings = net_config + ",lr_%.5E" % (lr) 
-
-    # Create log dataframe object.
-    log_df = make_log_df(len(nn_layer_sizes))
-
     # Run backpropagation training. 
-    log_df = train(train_tuple, validation_tuple, nn_layer_sizes, lr, 
-                   random_seed, nb_epochs, mini_batch_size, log_df, 
-                   ckpt_dir = hyp_param_settings, print_log=True)
+    log_df, validation_results = train(train_tuple, validation_tuple, hyper_params, nb_epochs, 
+                                       random_seed, verbose=True)
 
-    log_df.to_csv(hyp_param_settings + '/' + log_name + '.csv')
+    log_df.to_csv(hyper_param_str + '/log_file2.csv')
 
 def main_multiple():
 
@@ -115,6 +108,8 @@ def main_random_search():
                            print_log=True)
 
             log_df.to_csv(hyp_param_settings + '/' + log_name + '.csv')
+
+
 
 if __name__ == '__main__':
     
