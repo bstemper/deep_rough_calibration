@@ -1,10 +1,10 @@
 import tensorflow as tf
 import numpy as np
 from helpers import *
-from neural_network import fully_connected_nn
+from neural_network import dense_nn
 
 
-def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
+def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
           verbose = False, log_df= None, ckpt_dir = None):
     """
 
@@ -44,7 +44,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
                     Probabability of keeping neurons in dropout.
         nb_epochs: integer.
             Number of epochs to train the network.
-        random_seed: integer.
+        seed: integer.
             Random seed for PRNG, allowing reproducibility of results.
         verbose: boolean. default = False.
             If True, prints intermediate results to console.
@@ -66,7 +66,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
     ## PREPROCESSING
 
     # Set the NumPy PRNG such that feeding of batches may be reproduced.
-    np.random.seed(random_seed)
+    np.random.seed(seed)
 
     # Make identifier string for hyperparameter sample.
     hyper_param_str = make_hyper_param_str(hyper_params)
@@ -82,11 +82,12 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
 
     # Build computational graph of a fully connected neural network.
     tf.reset_default_graph()
-    nn = fully_connected_nn(train_tuple.nb_features, layer_sizes, 
-                            train_tuple.nb_labels, random_seed)
+    nn = dense_nn(train_tuple.nb_features, layer_sizes, train_tuple.nb_labels, seed)
 
-    # Add a training op to computational graph.
-    with tf.name_scope('training'):
+    # Add training op to computational graph and include Batch norm ops.
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        # Ensures that we execute the update_ops before performing the train_step.
         train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
 
     # Merge all summary ops in one op for convenience.
@@ -120,6 +121,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
         # Define validation feed dictionary to be fed into NN for benchmarking.
         val_feed_dict = { nn.inputs : validation_tuple.features,
                           nn.labels : validation_tuple.labels,
+                          nn.training_phase: False,
                           nn.pkeep  : 1
                         }
 
@@ -142,6 +144,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, random_seed,
                 train_feed_dict = { 
                     nn.inputs : train_tuple.features[mini_batch_indices, :],
                     nn.labels : train_tuple.labels[mini_batch_indices, :],
+                    nn.training_phase: True,
                     nn.pkeep  : pkeep
                     }
 
