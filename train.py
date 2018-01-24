@@ -85,10 +85,10 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
     nn = dense_nn(train_tuple.nb_features, layer_sizes, train_tuple.nb_labels, seed)
 
     # Add training op to computational graph and include Batch norm ops.
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    with tf.control_dependencies(update_ops):
+    # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    # with tf.control_dependencies(update_ops):
         # Ensures that we execute the update_ops before performing the train_step.
-        train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
+    train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
 
     # Merge all summary ops in one op for convenience.
     summary = tf.summary.merge_all()
@@ -118,11 +118,19 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
             log_df = make_log_df(len(layer_sizes))
 
-        # Define validation feed dictionary to be fed into NN for benchmarking.
-        val_feed_dict = { nn.inputs : validation_tuple.features,
-                          nn.labels : validation_tuple.labels,
-                          nn.training_phase: False,
-                          nn.pkeep  : 1
+        # Define feeds to be fed into NN for benchmarking.
+        train_testing_feed = { 
+                    nn.inputs : train_tuple.features,
+                    nn.labels : train_tuple.labels,
+                    # nn.training_phase: False,
+                    nn.pkeep: 1
+                    }
+
+        val_testing_feed = { 
+                        nn.inputs : validation_tuple.features,
+                        nn.labels : validation_tuple.labels,
+                        # nn.training_phase: False,
+                        nn.pkeep  : 1
                         }
 
         ## RUN BACKPROPAGATION
@@ -141,24 +149,24 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
                 mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
 
-                train_feed_dict = { 
+                train_training_feed = { 
                     nn.inputs : train_tuple.features[mini_batch_indices, :],
                     nn.labels : train_tuple.labels[mini_batch_indices, :],
-                    nn.training_phase: True,
+                    # nn.training_phase: True,
                     nn.pkeep  : pkeep
                     }
 
                 # Run training/backpropagation op.
-                sess.run([train_step], feed_dict=train_feed_dict)
+                sess.run([train_step], feed_dict=train_training_feed)
 
             # Writing intermediate summary statistics to disk for tensorboard.           
-            validation_summary = sess.run(summary, feed_dict = val_feed_dict)
+            validation_summary = sess.run(summary, feed_dict=val_testing_feed)
             writer.add_summary(validation_summary, epoch)
 
             # Writing intermediate results to pandas log df.
             metrics_ops = [nn.loss, nn.err_2pc, nn.err_1pc]
-            train_results = sess.run(metrics_ops, feed_dict=train_feed_dict)
-            validation_results = sess.run(metrics_ops, feed_dict=val_feed_dict)
+            train_results = sess.run(metrics_ops, feed_dict=train_testing_feed)
+            validation_results = sess.run(metrics_ops, feed_dict=val_testing_feed)
 
             log_data = layer_sizes + [lr, pkeep, epoch] + train_results \
                        + validation_results

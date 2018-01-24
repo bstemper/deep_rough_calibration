@@ -25,7 +25,7 @@ def dense_relu(inputs, units, seed, name='dense_relu'):
     # Specify the number of units/features incoming.
     dim_in = inputs.get_shape().as_list()[1]
 
-    with tf.name_scope(name):
+    with tf.variable_scope(name):
 
         # Weight initialization optimized for ReLUs a la He et al. (2015).
         kernel_init= tf.truncated_normal_initializer(stddev=sqrt(2.0/dim_in), 
@@ -36,14 +36,13 @@ def dense_relu(inputs, units, seed, name='dense_relu'):
                                       activation=tf.nn.relu, 
                                       kernel_initializer=kernel_init) 
 
-        return dense_layer
+    return dense_layer
                                             
 
 def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep, 
                        name='dense_relu_bn_drop'):
     """
-    Definition of a fully-connected layer with ReLU activations, droupout and
-    batch normalization AFTER the activations.
+    Definition of a fully-connected layer: DENSE > BN > RELU > Dropout.
     
     Arguments:
     ----------
@@ -66,19 +65,29 @@ def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep,
             Output of layer run through dropout procedure.
     """
 
-    with tf.name_scope(name):
+    # Specify the number of units/features incoming.
+    dim_in = inputs.get_shape().as_list()[1]
 
-        # Dense layer with ReLU activations.
-        l1 = dense_relu(inputs, units, seed)
+    with tf.variable_scope(name):
+
+        # Weight initialization optimized for ReLUs a la He et al. (2015).
+        kernel_init= tf.truncated_normal_initializer(stddev=sqrt(2.0/dim_in), 
+                                                     seed=seed)
+
+        # Functional interface for dense layer.
+        l = tf.layers.dense(inputs, units, activation=None, 
+                            kernel_initializer=kernel_init)
 
         # Applying batch normalisaton by Ioffe et al. (2015).
-        l2 = tf.layers.batch_normalization(l1, center=True, scale=True,
-                                           training=training_phase)
+        # l = tf.layers.batch_normalization(l, training=training_phase)
+
+        # Applying activation function.
+        l = tf.nn.relu(l)
 
         # Applying dropout by Srivastava et al. (2014).
-        output = tf.nn.dropout(l2, pkeep)
+        l = tf.nn.dropout(l, pkeep)
 
-        return output
+    return l
 
 
 def dense_nn(nb_features, layer_sizes, nb_labels, seed):
