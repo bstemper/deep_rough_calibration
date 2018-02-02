@@ -7,7 +7,8 @@ def load_labeled_csv(filename, feature_cols, label_cols):
     """
     Loads a .csv file with labeled data into memory. CSV File has to contain
     samples in rows and features and labels in columns. The utility function
-    then returns a named tuple with relevant information about data set.
+    then returns a named tuple with relevant information about data set where
+    the inputs have been normalized.
 
     Arguments:
     ----------
@@ -40,10 +41,13 @@ def load_labeled_csv(filename, feature_cols, label_cols):
     
     data.features = raw_data[:, feature_cols]
     data.labels = raw_data[:, label_cols]
-
     data.nb_features = len(feature_cols)
     data.nb_labels = len(label_cols)
     data.nb_samples = raw_data.shape[0]
+
+    # Normalize input data
+    data.features -= np.mean(data.features, axis=0)
+    data.features /= np.std(data.features, axis=0)
 
     return data
 
