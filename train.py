@@ -191,5 +191,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
         # Saving final model.
         save_path = saver.save(sess, hyper_param_str + '/final_model')
 
-        return log_df, validation_results
+        best_error = np.min(log_df['val_err2pc'].values)
+
+        return log_df, best_error
 
