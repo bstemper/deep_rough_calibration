@@ -66,7 +66,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
     ## PREPROCESSING
 
     # Set the NumPy PRNG such that feeding of batches may be reproduced.
-    np.random.seed(seed)
+    np.random.seed(0)
 
     # Make identifier string for hyperparameter sample.
     hyper_param_str = make_hyper_param_str(hyper_params)
@@ -82,7 +82,9 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
     # Build computational graph of a fully connected neural network.
     tf.reset_default_graph()
-    nn = dense_nn(train_tuple.nb_features, layer_sizes, train_tuple.nb_labels, seed)
+    tf.set_random_seed(seed)
+
+    nn = dense_nn(train_tuple.nb_features, layer_sizes, train_tuple.nb_labels)
 
     # Add training op to computational graph and include Batch norm ops.
     # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)

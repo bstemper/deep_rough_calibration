@@ -2,7 +2,7 @@ import tensorflow as tf
 from math import sqrt
 from collections import namedtuple
 
-def dense_relu(inputs, units, seed, name='dense_relu'):
+def dense_relu(inputs, units, name='dense_relu'):
     """
     Definition of a fully-connected layer with ReLU activations.
 
@@ -12,8 +12,6 @@ def dense_relu(inputs, units, seed, name='dense_relu'):
             Features or previous layer as input to this dense layer.
         units: int.
             Number of units in this layer.
-        seed: int.
-            PRNG setting used for weight initializiation.
         name: string.
             Name of the layer (used for Tensorboard).
 
@@ -28,8 +26,7 @@ def dense_relu(inputs, units, seed, name='dense_relu'):
     with tf.variable_scope(name):
 
         # Weight initialization optimized for ReLUs a la He et al. (2015).
-        kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in), 
-                                                     seed=seed)
+        kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in))
 
         # Functional interface for dense layer.
         dense_layer = tf.layers.dense(inputs, units, 
@@ -39,7 +36,7 @@ def dense_relu(inputs, units, seed, name='dense_relu'):
     return dense_layer
                                             
 
-def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep, 
+def dense_relu_bn_drop(inputs, units, training_phase, pkeep, 
                        name='dense_relu_bn_drop'):
     """
     Definition of a fully-connected layer: DENSE > BN > RELU > Dropout.
@@ -50,8 +47,6 @@ def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep,
             Input features or previous layer as input to this layer.
         units: int.
             Number of units of this layer.
-        seed: int.
-            PRNG setting used for weight initializiation.
         training_phase: boolean.
             For batchnorm: If training, set True. If test, set False.
         pkeep: float, in (0,1).
@@ -71,8 +66,7 @@ def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep,
     with tf.variable_scope(name):
 
         # Weight initialization optimized for ReLUs a la He et al. (2015).
-        kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in), 
-                                                     seed=seed)
+        kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in))
 
         # Functional interface for dense layer.
         l = tf.layers.dense(inputs, units, activation=None, 
@@ -90,7 +84,7 @@ def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep,
     return l
 
 
-def dense_nn(nb_features, layer_sizes, nb_labels, seed):
+def dense_nn(nb_features, layer_sizes, nb_labels):
     """
     Utility function that takes a specified NN topology (# units & layers)
     and returns a tensorflow computational graph of a fully connected (dense)
@@ -104,8 +98,6 @@ def dense_nn(nb_features, layer_sizes, nb_labels, seed):
             List with number of units per hidden layer, e.g. [32,16,8,4].
         nb_labels: int.
             Number of labels in labeled data.
-        seed: int.
-            PRNG setting used for weight initializiation.
 
     Returns:
     --------
@@ -151,22 +143,22 @@ def dense_nn(nb_features, layer_sizes, nb_labels, seed):
     layers = []
 
     # Dealing with special case of first hidden layer.
-    first_layer = dense_relu_bn_drop(inputs, layer_sizes[0], seed, 
-                                   training_phase, pkeep, 'dense_hidden_0')
+    first_layer = dense_relu_bn_drop(inputs, layer_sizes[0], training_phase, 
+                                     pkeep, 'dense_hidden_0')
 
     layers.append(first_layer)
 
     # Dealing with hidden layers between first and final prediction layer.
     for i in range(nb_hidden_layers - 1):
 
-        hidden_layer = dense_relu_bn_drop(layers[i], layer_sizes[i+1], seed,
+        hidden_layer = dense_relu_bn_drop(layers[i], layer_sizes[i+1],
                                           training_phase, pkeep,
                                           'dense_hidden_%s' % str(i+1))
 
         layers.append(hidden_layer)
 
     # Dealing with final prediction layer.
-    prediction_layer = dense_relu(layers[-1], nb_labels, seed, 'predictions')
+    prediction_layer = dense_relu(layers[-1], nb_labels, 'predictions')
 
     ## ADDING LOSS & ACCURACY/ERROR TO COMPUTATIONAL GRAPH
 
