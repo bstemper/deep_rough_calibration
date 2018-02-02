@@ -28,7 +28,7 @@ def dense_relu(inputs, units, seed, name='dense_relu'):
     with tf.variable_scope(name):
 
         # Weight initialization optimized for ReLUs a la He et al. (2015).
-        kernel_init= tf.truncated_normal_initializer(stddev=sqrt(2.0/dim_in), 
+        kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in), 
                                                      seed=seed)
 
         # Functional interface for dense layer.
@@ -71,7 +71,7 @@ def dense_relu_bn_drop(inputs, units, seed, training_phase, pkeep,
     with tf.variable_scope(name):
 
         # Weight initialization optimized for ReLUs a la He et al. (2015).
-        kernel_init= tf.truncated_normal_initializer(stddev=sqrt(2.0/dim_in), 
+        kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in), 
                                                      seed=seed)
 
         # Functional interface for dense layer.
