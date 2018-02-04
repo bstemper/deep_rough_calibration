@@ -59,8 +59,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
     --------
         log_df: pandas dataframe.
             Pandas df log file with training and validation metrics across eps.
-        validation_results: array-like, shape=[,3]
-            Loss and accuracies on validation set at the last epoch.
+        best_error: float
+            Best err2pc on validation set among epochs.
     """
 
     ## PREPROCESSING
