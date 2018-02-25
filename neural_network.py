@@ -164,14 +164,15 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
 
     # Define the loss function.
     with tf.name_scope('loss'):
-        loss = tf.reduce_mean(tf.square(prediction_layer-labels))
+        # Loss given by squared relativ error
+        loss = tf.reduce_mean(tf.square((prediction_layer-labels)/labels))
         tf.summary.scalar('loss', loss)
 
     # Define accuracy = % of predictions with RE < certain threshold.
     with tf.name_scope('accuracy'):
 
         # Define the relative error as a metric of accuracy for predictions.
-        relative_error = tf.abs(prediction_layer-labels)/labels
+        relative_error = tf.abs(prediction_layer-labels/labels)
 
         # Relative error less than 2%
         close_prediction_2pc = tf.greater(relative_error, 0.02)
