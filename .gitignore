@@ -20,6 +20,6 @@
 *.tikz
 
 # Folders
-computations/
-computations_toy/
 results/
+tex/
+labeled_data/
