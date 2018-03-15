@@ -1,9 +1,8 @@
 
 # File endings
 *.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*
 *.pyc
-*.csv
-*.pdf
 *.aux
 *.out
 *.log
@@ -22,4 +21,6 @@
 # Folders
 results/
 tex/
-labeled_data/
+labeled_data/heston/
+literature/
+notes/
