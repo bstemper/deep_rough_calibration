@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from collections import namedtuple
-import sklearn.utils.shuffle as shuffle
+from sklearn.utils import shuffle
 
 
 def load_labeled_csv(filename, feature_cols, label_cols):
@@ -112,24 +112,6 @@ def make_hyper_param_str(hyper_params):
                                                          mini_batch_size, pkeep)
 
     return hyper_param_str
-
-
-def verbose_print(verbose, str_to_print):
-    """
-    Prints 'str_to_print' if verbose is True and nothing otherwise.
-
-    Arguments:
-    ----------
-        verbose: boolean.
-            If verbose=True, then print string, otherwise don't.
-        str_to_print: string.
-            String to print.
-    """
-
-    if verbose == True:
-
-            print(str_to_print)
-
 
 def nn_is_fully_trained(df, threshold):
     """
