@@ -1,7 +1,11 @@
 import tensorflow as tf
 import numpy as np
+import logging
 from helpers import *
 from neural_network import dense_nn
+
+# Logging stuff
+logger = logging.getLogger("deep_cal.train")
 
 
 def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
@@ -70,7 +74,6 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
     # Make identifier string for hyperparameter sample.
     hyper_param_str = make_hyper_param_str(hyper_params)
-    verbose_print(verbose, hyper_param_str)
 
     # Splitting hyperparameters into separate variables.
     layer_sizes = hyper_params[0]
@@ -84,7 +87,11 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
     tf.reset_default_graph()
     tf.set_random_seed(seed)
 
+    logger.info("Building computational graph of a fully connected neural network.")
+
     nn = dense_nn(train_tuple.nb_features, layer_sizes, train_tuple.nb_labels)
+
+    logger.info('Done.')
 
     # Add training op to computational graph and include Batch norm ops.
     # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -107,17 +114,20 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
         # latest checkpoint to continue training the network.
         if ckpt_dir == None:
 
+            logger.info('No checkpoint exists. Initialize NN.')
             init = tf.global_variables_initializer()
             sess.run(init)
 
         else:
 
+            logging.info('Checkpoint exists. Loading checkpoint.')
             saver.restore(sess, tf.train.latest_checkpoint(ckpt_dir))
 
         # If no pandas df is given as log file, create one. Otherwise use 
         # existing one.
         if log_df == None:
 
+            logger.info('Pandas DF for logging does not exist. Creating now.')
             log_df = make_log_df(len(layer_sizes))
 
         # Define feeds to be fed into NN for benchmarking.
@@ -136,6 +146,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
                         }
 
         ## RUN BACKPROPAGATION
+
+        logger.info('Starting backpropagation.')
             
         # Run through epochs where 1 epoch is 1 full run through training set.
         for epoch in range(1, nb_epochs + 1):
@@ -148,6 +160,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
             # Running through individual minibatches and doing backprop.
             for i in range(nb_mini_batches):
+
+                logger.debug('Iteration: %i' %i)
 
                 mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
 
@@ -178,7 +192,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             epoch_res = 'Ep %i: loss|err2pc|err1pc %s,  %s' \
                         % (epoch, train_results, validation_results)
 
-            verbose_print(verbose, epoch_res)
+            logger.info(epoch_res)
 
             # Checking conditions for breaking the training
             cond1 = nn_is_fully_trained(log_df, 0.01)
@@ -189,9 +203,11 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
                 break
 
         # Saving final model.
+        logger.info('Saving final model to disk.')
         save_path = saver.save(sess, hyper_param_str + '/final_model')
 
         best_error = np.min(log_df['val_err2pc'].values)
+        logger.info('Best error on validation set: %f' % best_error)
 
         return log_df, best_error
 

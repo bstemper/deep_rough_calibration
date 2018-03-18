@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
+import logging
 from collections import namedtuple
 from sklearn.utils import shuffle
+
+# Logging stuff
+logger = logging.getLogger("deep_cal.helpers")
 
 
 def load_labeled_csv(filename, feature_cols, label_cols):
@@ -137,7 +141,7 @@ def nn_is_fully_trained(df, threshold):
 
     if df.loc[df.shape[0] - 1, 'val_err2pc'] <= threshold:
 
-        print('Neural network fully trained.')
+        logger.info('Neural network fully trained.')
 
         return True
 
@@ -168,7 +172,7 @@ def nn_does_not_learn(df):
 
     if last_ep >= 5 and np.mean(df.loc[last_ep-5:last_ep, 'val_err2pc']) >= 1:
 
-        print('Neural network does not learn.')
+        logger.info('Neural network does not learn.')
 
         return True
 
