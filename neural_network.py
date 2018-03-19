@@ -112,10 +112,10 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
                 Final/output layer of neural network.
             nn.loss: tf op (tf.float32)
                 Loss op in computational graph computing loss function.
-            nn.err_2pc: tf op (tf.float32)
-                Percentage of predictions with relative error of more than 2%.
-            nn.err_1pc: tf op (tf.float32)
-                Percentage of predictions with relative error of more than 1%.
+            nn.err_10pc: tf op (tf.float32)
+                Percentage of predictions with relative error of more than 10%.
+            nn.err_5pc: tf op (tf.float32)
+                Percentage of predictions with relative error of more than 5%.
 
     """
 
@@ -125,7 +125,7 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
 
     # Creating a class of named tuples collecting neural network ops.
     NeuralNetwork = namedtuple('nn', 'inputs, labels, pkeep, training_phase, \
-                                predictions, loss, err_2pc, err_1pc')
+                                predictions, loss, err_10pc, err_5pc')
 
     # Placeholders for labeled pair of training data.
     inputs = tf.placeholder(tf.float32, [None, nb_features], name='inputs')
@@ -172,17 +172,17 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
     with tf.name_scope('accuracy'):
 
         # Define the relative error as a metric of accuracy for predictions.
-        relative_error = tf.abs(prediction_layer-labels/labels)
+        relative_error = tf.abs((prediction_layer-labels)/labels)
 
         # Relative error less than 2%
-        close_prediction_2pc = tf.greater(relative_error, 0.02)
-        err_2pc = tf.reduce_mean(tf.cast(close_prediction_2pc, tf.float32))
-        tf.summary.scalar('error_2pc', err_2pc)
+        close_prediction_10pc = tf.greater(relative_error, 0.10)
+        err_10pc = tf.reduce_mean(tf.cast(close_prediction_10pc, tf.float32))
+        tf.summary.scalar('error_10pc', err_10pc)
 
         # Relative error less than 1%
-        close_prediction_1pc = tf.greater(relative_error, 0.01)
-        err_1pc = tf.reduce_mean(tf.cast(close_prediction_1pc, tf.float32))
-        tf.summary.scalar('error_1pc', err_1pc)
+        close_prediction_5pc = tf.greater(relative_error, 0.05)
+        err_5pc = tf.reduce_mean(tf.cast(close_prediction_5pc, tf.float32))
+        tf.summary.scalar('error_5pc', err_5pc)
 
     ## COLLECTION OPS AND INFOS OF NN IN NAMED TUPLE
 
@@ -192,8 +192,8 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
                        training_phase = training_phase,
                        predictions = prediction_layer,
                        loss = loss,
-                       err_2pc = err_2pc,
-                       err_1pc = err_1pc)
+                       err_10pc = err_10pc,
+                       err_5pc = err_5pc)
 
     return nn
 

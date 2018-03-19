@@ -64,7 +64,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
         log_df: pandas dataframe.
             Pandas df log file with training and validation metrics across eps.
         best_error: float
-            Best err2pc on validation set among epochs.
+            Best err10pc on validation set among epochs.
     """
 
     ## PREPROCESSING
@@ -180,7 +180,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             writer.add_summary(validation_summary, epoch)
 
             # Writing intermediate results to pandas log df.
-            metrics_ops = [nn.loss, nn.err_2pc, nn.err_1pc]
+            metrics_ops = [nn.loss, nn.err_10pc, nn.err_5pc]
             train_results = sess.run(metrics_ops, feed_dict=train_testing_feed)
             validation_results = sess.run(metrics_ops, feed_dict=val_testing_feed)
 
@@ -189,7 +189,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             log_df.loc[log_df.shape[0]] = log_data
             
             # If verbose is True, print intermediate results.
-            epoch_res = 'Ep %i: loss|err2pc|err1pc %s,  %s' \
+            epoch_res = 'Ep %i: loss|err10pc|err5pc %s,  %s' \
                         % (epoch, train_results, validation_results)
 
             logger.info(epoch_res)
@@ -206,7 +206,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
         logger.info('Saving final model to disk.')
         save_path = saver.save(sess, hyper_param_str + '/final_model')
 
-        best_error = np.min(log_df['val_err2pc'].values)
+        best_error = np.min(log_df['val_err10pc'].values)
         logger.info('Best error on validation set: %f' % best_error)
 
         return log_df, best_error
