@@ -124,7 +124,7 @@ res_gp = gp_minimize(train_bayes, space,
 
 logger.info('Gaussian optimisation finished. Now saving results to disk.')
 
-dump(res_gp, filename + '.gz')
+dump(res_gp, 'bayes.gz')
 
 logger.info('Optimisation finished. DONE.')
 
