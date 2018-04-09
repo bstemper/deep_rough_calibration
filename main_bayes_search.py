@@ -1,5 +1,4 @@
-# Main script Bayes Search of Hyperparameters
-# # # # # # # # # # # # # # # # # # # # # # #
+# --------- Main script: Bayes Search of Hyperparameters -------------------- #
 
 import sys
 import numpy as np
@@ -11,10 +10,10 @@ from helpers import *
 from neural_network import *
 from train import *
 
-# Logging stuff
+# ------------------------------- Logging stuff ----------------------------- #
 logger = logging.getLogger("deep_cal")
 logger.setLevel(logging.INFO)
-fh = logging.FileHandler("logger_bayes_search.log")    
+fh = logging.FileHandler("logger_bayes_search_4layer.log")    
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
@@ -22,6 +21,56 @@ logger.addHandler(fh)
 logger.info("PROGRAM START")
 logger.debug("Python version" + sys.version)
 logger.debug("Tensorflow version" + tf.__version__)
+
+# -------------------------------- Configuration ---------------------------- #
+
+# Labeled data configuration
+train_filename = 'labeled_data/heston/training_data.csv'
+validation_filename = 'labeled_data/heston/validation_data.csv'
+feature_cols = [ _ for _ in range(7)]
+label_cols = [7]
+
+# Training configuration
+random_seed = 2018
+nb_epochs = 20
+
+# Search space
+space = [(1,12), 
+         (1,12),
+         (1,12),
+         (1,12),
+         (-7.0, -2.0),
+         (5,12),
+         (0.25,1.0)
+        ]
+
+# Gaussian optimization parameters
+n_calls = 100
+n_random_starts = 33
+acq_func = 'EIps'
+n_jobs = -1
+verbose = True
+random_state = random_seed + 1
+
+# --------------------------------- Preprocessing --------------------------- #
+# Read training and validation data named tuples into memory.
+logger.info("Importing and normalizing input labeled data.")
+train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
+validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
+
+# Normalize training and validation data by training statistics
+train_mean = np.mean(train_tuple.features, axis=0)
+train_std = np.std(train_tuple.features, axis=0)
+
+train_tuple.features -= train_mean
+train_tuple.features /= train_std
+
+validation_tuple.features -= train_mean
+validation_tuple.features /= train_std
+
+logger.info('Finished import and normalization of input data.')
+
+# --------------------------------- Optimisation ---------------------------- #
 
 def train_bayes(params):
     """
@@ -40,9 +89,9 @@ def train_bayes(params):
 
     """
     # Translate params into format understood by train function
-    layer_sizes = (2**np.array(params[:3])).tolist()
-    learning_rate = 10**params[3]
-    mini_batch_size = 2**params[4]
+    layer_sizes = (2**np.array(params[:4])).tolist()
+    learning_rate = 10**params[4]
+    mini_batch_size = 2**params[5]
     pkeep = 1
     hyper_params = [layer_sizes, learning_rate, mini_batch_size, pkeep]
     hyper_param_str = make_hyper_param_str(hyper_params)
@@ -53,7 +102,7 @@ def train_bayes(params):
     log_df, best_error = train(train_tuple, validation_tuple, hyper_params, 
                                nb_epochs, random_seed, verbose=True)
     elapsed_time = time.time() - tic
-    logger.info('Finished training in %i s' %elapsed_time)
+    logger.info('Finished training in %i s.' %elapsed_time)
 
     # Writing Pandas log file to csv file on disk.
     logger.info('Writing pandas DF log to disk.')
@@ -61,57 +110,10 @@ def train_bayes(params):
     
     return best_error, elapsed_time
 
-
-# Labeled data configuration
-train_filename = 'labeled_data/heston/training_data.csv'
-validation_filename = 'labeled_data/heston/validation_data.csv'
-feature_cols = [ _ for _ in range(7)]
-label_cols = [7]
-
-# Training configuration
-random_seed = 100
-nb_epochs = 15
-
-# Search space
-space = [(1,10), 
-         (1,10),
-         (1,10),
-         (-7.0, -1.0),
-         (3,10),
-         (0.25,1.0)
-        ]
-
-# Read training and validation data named tuples into memory.
-logger.info("Importing and normalizing input labeled data.")
-train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
-validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
-
-# Normalize training and validation data by training statistics
-train_mean = np.mean(train_tuple.features, axis=0)
-train_std = np.std(train_tuple.features, axis=0)
-
-train_tuple.features -= train_mean
-train_tuple.features /= train_std
-
-validation_tuple.features -= train_mean
-validation_tuple.features /= train_std
-
-logger.info('Finished import and normalization of input data.')
-
-# Gaussian optimization parameters
-n_calls = 200
-n_random_starts = 20
-acq_func = 'EIps'
-n_jobs = -1
-verbose = True
-random_state = random_seed + 1
-
 # Gaussian optimisation
-
 logger.info('Running Gaussian optimisation with %i calls, %i random starts and \
-            %s as acquisition function' % (n_calls,n_random_starts,acq_func))
+            %s as acquisition function.' % (n_calls,n_random_starts,acq_func))
 
-print = logger.info
 
 res_gp = gp_minimize(train_bayes, space, 
                     n_calls=n_calls, 
@@ -127,30 +129,4 @@ logger.info('Gaussian optimisation finished. Now saving results to disk.')
 dump(res_gp, 'bayes.gz')
 
 logger.info('Optimisation finished. DONE.')
-
-
-# # IMPLIED VOLATILITY
-# # ===========================================================================
-
-# # Data directories & data extraction params
-# train_filename = 'deep_impliedvol/labeled_data/train_uniform.csv'
-# validation_filename = 'deep_impliedvol/labeled_data/validation_uniform.csv'
-# test_filename = 'deep_impliedvol/labeled_data/test_uniform.csv'
-# feature_cols = [0, 1, 2]
-# label_cols = [3]
-
-# # Read training and validation data named tuples into memory.
-# train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
-# validation_tuple = load_labeled_csv(validation_filename, feature_cols, label_cols)
-
-# random_seed = 42
-# nb_epochs = 15
-
-# # Search space
-# space = [(1,10), 
-#          (1,10),
-#          (1,10),
-#          (-7.0, -1),
-#          (3,10),
-#         ]
 
