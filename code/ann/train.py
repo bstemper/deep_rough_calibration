@@ -1,8 +1,10 @@
+# ------------------- Neural network training ----------------------------- #
+
 import tensorflow as tf
 import numpy as np
 import logging
-from helpers import *
-from neural_network import dense_nn
+from .helpers import *
+from .neural_network import dense_nn
 
 # Logging stuff
 logger = logging.getLogger("deep_cal.train")

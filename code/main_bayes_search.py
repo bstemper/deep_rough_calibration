@@ -1,19 +1,25 @@
-# --------- Main script: Bayes Search of Hyperparameters -------------------- #
+# --------- Main script: Bayes Search of Hyperparameters ------------------ #
 
 import sys
 import numpy as np
 import tensorflow as tf
 import pandas as pd
 import time
-from skopt import gp_minimize, dump
-from helpers import *
-from neural_network import *
-from train import *
+import os
+from os.path import dirname as up
 
-# ------------------------------- Logging stuff ----------------------------- #
-logger = logging.getLogger("deep_cal")
+from skopt import gp_minimize, dump
+from ann.helpers import *
+from ann.neural_network import *
+from ann.train import *
+
+deep_cal_dir = up(os.getcwd())
+
+# --------------------- Logging stuff ------------------------------------- #
+
+logger = logging.getLogger("bayes_hyper_opt")
 logger.setLevel(logging.INFO)
-fh = logging.FileHandler("logger_bayes_search_4layer.log")    
+fh = logging.FileHandler("logs/bayes_hyper_opt.log")    
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
@@ -22,11 +28,11 @@ logger.info("PROGRAM START")
 logger.debug("Python version" + sys.version)
 logger.debug("Tensorflow version" + tf.__version__)
 
-# -------------------------------- Configuration ---------------------------- #
+# --------------------- Configuration ------------------------------------- #
 
 # Labeled data configuration
-train_filename = 'labeled_data/heston/training_data.csv'
-validation_filename = 'labeled_data/heston/validation_data.csv'
+train_filename = deep_cal_dir + '/data/heston/training_data.csv'
+validation_filename = deep_cal_dir + '/data/heston/validation_data.csv'
 feature_cols = [ _ for _ in range(7)]
 label_cols = [7]
 
@@ -52,7 +58,8 @@ n_jobs = -1
 verbose = True
 random_state = random_seed + 1
 
-# --------------------------------- Preprocessing --------------------------- #
+# ------------------------------- Preprocessing --------------------------- #
+
 # Read training and validation data named tuples into memory.
 logger.info("Importing and normalizing input labeled data.")
 train_tuple = load_labeled_csv(train_filename, feature_cols, label_cols)
@@ -70,7 +77,7 @@ validation_tuple.features /= train_std
 
 logger.info('Finished import and normalization of input data.')
 
-# --------------------------------- Optimisation ---------------------------- #
+# ------------------------------- Optimisation ---------------------------- #
 
 def train_bayes(params):
     """

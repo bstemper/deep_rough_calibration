@@ -1,3 +1,5 @@
+# ------------------- Neural network construction ------------------------- #
+
 import tensorflow as tf
 from math import sqrt
 from collections import namedtuple
