@@ -24,3 +24,6 @@ tex/
 labeled_data/heston/
 literature/
 notes/
+.idea
+code/notebooks/.ipynb_checkpoints
+data/heston
