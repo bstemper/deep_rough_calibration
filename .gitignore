@@ -27,3 +27,4 @@ notes/
 .idea
 code/notebooks/.ipynb_checkpoints
 data/heston
+data/rough_bergomi
