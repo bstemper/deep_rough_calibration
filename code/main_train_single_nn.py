@@ -16,7 +16,7 @@ deep_cal_dir = up(os.getcwd())
 # --------------------- Logging stuff ------------------------------------- #
 
 # Logging stuff
-logger = logging.getLogger("")
+logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
 fh = logging.FileHandler("logs/single_training_nn.log")    
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
