@@ -81,7 +81,7 @@ def dense_relu_bn_drop(inputs, units, training_phase, pkeep,
         l = tf.nn.relu(l)
 
         # Applying dropout by Srivastava et al. (2014).
-        l = tf.nn.dropout(l, pkeep)
+        # l = tf.nn.dropout(l, pkeep)
 
     return l
 
