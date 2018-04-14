@@ -12,14 +12,20 @@ from skopt import gp_minimize, dump
 from ann.helpers import *
 from ann.neural_network import *
 from ann.train import *
+from hyperdash import Experiment
 
 deep_cal_dir = up(os.getcwd())
 
+project_name = 'heston_3L_bayes_v1'
+project_dir = 'results/' + project_name
+
 # --------------------- Logging stuff ------------------------------------- #
 
-logger = logging.getLogger("bayes_hyper_opt")
+
+
+logger = logging.getLogger(project_name)
 logger.setLevel(logging.INFO)
-fh = logging.FileHandler("logs/bayes_hyper_opt.log")    
+fh = logging.FileHandler(project_dir + 'bayes_search.log')    
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
@@ -38,13 +44,12 @@ label_cols = [7]
 
 # Training configuration
 random_seed = 2018
-nb_epochs = 20
+nb_epochs = 4
 
 # Search space
-space = [(1,12), 
-         (1,12),
-         (1,12),
-         (1,12),
+space = [(1,2), 
+         (1,2),
+         (1,2),
          (-7.0, -2.0),
          (5,12),
          (0.25,1.0)
@@ -55,7 +60,7 @@ n_calls = 100
 n_random_starts = 33
 acq_func = 'EIps'
 n_jobs = -1
-verbose = True
+verbose = False
 random_state = random_seed + 1
 
 # ------------------------------- Preprocessing --------------------------- #
@@ -95,11 +100,14 @@ def train_bayes(params):
         tbd
 
     """
+    # Create Hyperdash hd_experiment
+    hd_exp = Experiment(project_name)
+
     # Translate params into format understood by train function
-    layer_sizes = (2**np.array(params[:4])).tolist()
-    learning_rate = 10**params[4]
-    mini_batch_size = 2**params[5]
-    pkeep = 1
+    layer_sizes = hd_exp.param('layer_sizes', (2**np.array(params[:3])).tolist())
+    learning_rate = hd_exp.param('learning rate', 10**params[3])
+    mini_batch_size = hd_exp.param('mini batch size', int(2**params[4]))
+    pkeep = hd_exp.param('dropout prob', 1)
     hyper_params = [layer_sizes, learning_rate, mini_batch_size, pkeep]
     hyper_param_str = make_hyper_param_str(hyper_params)
 
@@ -107,13 +115,16 @@ def train_bayes(params):
     tic = time.time()
     logger.info('Start training for ' + hyper_param_str)
     log_df, best_error = train(train_tuple, validation_tuple, hyper_params, 
-                               nb_epochs, random_seed, verbose=True)
+                               nb_epochs, random_seed, hd_exp, project_dir)
     elapsed_time = time.time() - tic
-    logger.info('Finished training in %i s.' %elapsed_time)
+    logger.info('Finished training in {} s.'.format(elapsed_time))
 
     # Writing Pandas log file to csv file on disk.
     logger.info('Writing pandas DF log to disk.')
-    log_df.to_csv(hyper_param_str + '/log_file.csv')
+    log_df.to_csv(project_dir + '/' + hyper_param_str +'/data_df.csv')
+
+    # Finish Hyperdash Experiment
+    hd_exp.end()
     
     return best_error, elapsed_time
 
@@ -133,7 +144,7 @@ res_gp = gp_minimize(train_bayes, space,
 
 logger.info('Gaussian optimisation finished. Now saving results to disk.')
 
-dump(res_gp, 'bayes.gz')
+dump(res_gp, project_dir + '/bayes_search_dump')
 
 logger.info('Optimisation finished. DONE.')
 

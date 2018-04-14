@@ -11,12 +11,12 @@ logger = logging.getLogger("deep_cal.train")
 
 
 def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
-          verbose = False, log_df= None, ckpt_dir = None):
+          hd_exp, project_dir, log_df= None, ckpt_dir = None):
     """
 
     Arguments:
     ----------
-        train_tuple:   named tuple.
+        train_tuple:   named tuple
             train_tuple.features: array-like, shape=[# samples, # features].
                 Features of the data set.
             train_tuple.labels: array-like, shape=[# samples, # labels].
@@ -52,8 +52,10 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             Number of epochs to train the network.
         seed: integer.
             Random seed for PRNG, allowing reproducibility of results.
-        verbose: boolean. default = False.
-            If True, prints intermediate results to console.
+        hd_exp: Hyperdash experiment object
+            Needed for hyperparameter and general training visualization.
+        project_dir: string.
+            Project directory to write to.
         log_df: pandas dataframe, shape=[, nb_layers + 8], default = None
             Pandas df that serves as a log file. If none, df is created.
         ckpt_dir = string, default = None.
@@ -110,7 +112,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
         # Initialize important tensorflow objects.
         saver = tf.train.Saver()
-        writer = tf.summary.FileWriter(hyper_param_str, graph=sess.graph)
+        writer = tf.summary.FileWriter(project_dir + '/' + hyper_param_str, 
+                                       graph=sess.graph)
 
         # If no checkpoint directory exists, initialize NN. Otherwise, load
         # latest checkpoint to continue training the network.
@@ -190,9 +193,16 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
                        + validation_results
             log_df.loc[log_df.shape[0]] = log_data
             
-            # If verbose is True, print intermediate results.
             epoch_res = 'Ep %i: loss|err10pc|err5pc %s,  %s' \
                         % (epoch, train_results, validation_results)
+
+            # Logging results to hyperdash and logging csv.
+            hd_exp.metric('train loss', train_results[0])
+            hd_exp.metric('train acc 10%', train_results[1])
+            hd_exp.metric('train acc 5%', train_results[2])
+            hd_exp.metric('validation loss', train_results[0])
+            hd_exp.metric('validation acc 10%', train_results[1])
+            hd_exp.metric('validation acc 5%', train_results[2])
 
             logger.info(epoch_res)
 
@@ -206,7 +216,8 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
         # Saving final model.
         logger.info('Saving final model to disk.')
-        save_path = saver.save(sess, hyper_param_str + '/final_model')
+        save_path = saver.save(sess, project_dir + '/' + hyper_param_str + 
+                               '/final_model')
 
         best_error = np.min(log_df['val_err10pc'].values)
         logger.info('Best error on validation set: %f' % best_error)
