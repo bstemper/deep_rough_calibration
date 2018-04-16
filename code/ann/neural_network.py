@@ -160,7 +160,10 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
         layers.append(hidden_layer)
 
     # Dealing with final prediction layer (linear, no act function)
+    dim_in = layer_sizes[-1]
+
     kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in))
+
     prediction_layer = tf.layers.dense(layers[-1], nb_labels, 
                                        activation=None, 
                                        kernel_initializer=kernel_init,
@@ -171,7 +174,7 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
     # Define the loss function.
     with tf.name_scope('loss'):
         # Loss given by mean squared error
-        loss = tf.metrics.mean_squared_error(labels, prediction_layer)
+        loss = tf.losses.mean_squared_error(labels, prediction_layer)
         tf.summary.scalar('loss', loss)
 
     # Define accuracy = % of predictions with RE < certain threshold.
