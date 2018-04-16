@@ -198,11 +198,11 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
 
             # Logging results to hyperdash and logging csv.
             hd_exp.metric('train loss', train_results[0])
-            hd_exp.metric('train acc 10%', train_results[1])
-            hd_exp.metric('train acc 5%', train_results[2])
+            hd_exp.metric('train error 10%', train_results[1])
+            hd_exp.metric('train error 5%', train_results[2])
             hd_exp.metric('validation loss', validation_results[0])
-            hd_exp.metric('validation acc 10%', validation_results[1])
-            hd_exp.metric('validation acc 5%', validation_results[2])
+            hd_exp.metric('validation error 10%', validation_results[1])
+            hd_exp.metric('validation error 5%', validation_results[2])
 
             logger.info(epoch_res)
 
