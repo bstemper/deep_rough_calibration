@@ -159,8 +159,12 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
 
         layers.append(hidden_layer)
 
-    # Dealing with final prediction layer.
-    prediction_layer = dense_relu(layers[-1], nb_labels, 'predictions')
+    # Dealing with final prediction layer (linear, no act function)
+    kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in))
+    prediction_layer = tf.layers.dense(layers[-1], nb_labels, 
+                                       activation=None, 
+                                       kernel_initializer=kernel_init,
+                                       name = 'predictions')
 
     ## ADDING LOSS & ACCURACY/ERROR TO COMPUTATIONAL GRAPH
 
