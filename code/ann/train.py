@@ -98,10 +98,12 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
     logger.info('Done.')
 
     # Add training op to computational graph and include Batch norm ops.
-    # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    # with tf.control_dependencies(update_ops):
-        # Ensures that we execute the update_ops before performing the train_step.
-    train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+    # Ensures that we execute the update_ops before performing the train_step.
+    with tf.control_dependencies(update_ops):
+        
+        train_step = tf.train.AdamOptimizer(lr).minimize(nn.loss)
 
     # Merge all summary ops in one op for convenience.
     summary = tf.summary.merge_all()
@@ -139,14 +141,14 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
         train_testing_feed = { 
                     nn.inputs : train_tuple.features,
                     nn.labels : train_tuple.labels,
-                    # nn.training_phase: False,
+                    nn.training_phase: False,
                     nn.pkeep: 1
                     }
 
         val_testing_feed = { 
                         nn.inputs : validation_tuple.features,
                         nn.labels : validation_tuple.labels,
-                        # nn.training_phase: False,
+                        nn.training_phase: False,
                         nn.pkeep  : 1
                         }
 
@@ -173,7 +175,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
                 train_training_feed = { 
                     nn.inputs : train_tuple.features[mini_batch_indices, :],
                     nn.labels : train_tuple.labels[mini_batch_indices, :],
-                    # nn.training_phase: True,
+                    nn.training_phase: True,
                     nn.pkeep  : pkeep
                     }
 

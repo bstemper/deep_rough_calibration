@@ -75,7 +75,7 @@ def dense_relu_bn_drop(inputs, units, training_phase, pkeep,
                             kernel_initializer=kernel_init)
 
         # Applying batch normalisaton by Ioffe et al. (2015).
-        # l = tf.layers.batch_normalization(l, training=training_phase)
+        l = tf.layers.batch_normalization(l, training=training_phase)
 
         # Applying activation function.
         l = tf.nn.relu(l)
@@ -163,7 +163,7 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
     dim_in = layer_sizes[-1]
 
     kernel_init= tf.random_normal_initializer(stddev=sqrt(2.0/dim_in))
-
+    
     prediction_layer = tf.layers.dense(layers[-1], nb_labels, 
                                        activation=None, 
                                        kernel_initializer=kernel_init,
