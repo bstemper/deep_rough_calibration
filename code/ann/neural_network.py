@@ -173,8 +173,8 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
 
     # Define the loss function.
     with tf.name_scope('loss'):
-        # Loss given by mean squared error
-        loss = tf.losses.mean_squared_error(labels, prediction_layer)
+
+        loss = tf.reduce_mean(tf.square((prediction_layer - labels)/labels))
         tf.summary.scalar('loss', loss)
 
     # Define accuracy = % of predictions with RE < certain threshold.
