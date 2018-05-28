@@ -174,6 +174,7 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
     # Define the loss function.
     with tf.name_scope('loss'):
 
+        # loss = tf.losses.mean_squared_error(labels, prediction_layer)
         loss = tf.reduce_mean(tf.square((prediction_layer - labels)/labels))
         tf.summary.scalar('loss', loss)
 
@@ -192,6 +193,12 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
         close_prediction_5pc = tf.greater(relative_error, 0.05)
         err_5pc = tf.reduce_mean(tf.cast(close_prediction_5pc, tf.float32))
         tf.summary.scalar('error_5pc', err_5pc)
+        
+    ## ADDING GRADIENT OF OUTPUT WRT TO INPUTS
+    
+    with tf.name_scope('jacobian'):
+        
+        jac = tf.gradients(ys=prediction-layer, xs=inputs)
 
     ## COLLECTION OPS AND INFOS OF NN IN NAMED TUPLE
 
@@ -202,7 +209,8 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
                        predictions = prediction_layer,
                        loss = loss,
                        err_10pc = err_10pc,
-                       err_5pc = err_5pc)
+                       err_5pc = err_5pc,
+                       jac = jac)
 
     return nn
 
