@@ -209,7 +209,7 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             logger.info(epoch_res)
 
             # Checking conditions for breaking the training
-            cond1 = nn_is_fully_trained(log_df, 0.01)
+            cond1 = nn_is_fully_trained(log_df, 0.02)
             cond2 = nn_does_not_learn(log_df)
 
             if (cond1 or cond2) == True:

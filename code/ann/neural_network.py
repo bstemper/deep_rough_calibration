@@ -118,6 +118,8 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
                 Percentage of predictions with relative error of more than 10%.
             nn.err_5pc: tf op (tf.float32)
                 Percentage of predictions with relative error of more than 5%.
+            nn.jac: tf op(tf.float32)
+                Gradient/Jacobian of Output(s) wrt to inputs.
 
     """
 
@@ -127,7 +129,7 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
 
     # Creating a class of named tuples collecting neural network ops.
     NeuralNetwork = namedtuple('nn', 'inputs, labels, pkeep, training_phase, \
-                                predictions, loss, err_10pc, err_5pc')
+                                predictions, loss, err_10pc, err_5pc, jac')
 
     # Placeholders for labeled pair of training data.
     inputs = tf.placeholder(tf.float32, [None, nb_features], name='inputs')
@@ -198,7 +200,7 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
     
     with tf.name_scope('jacobian'):
         
-        jac = tf.gradients(ys=prediction-layer, xs=inputs)
+        jac = tf.gradients(ys=prediction_layer, xs=inputs)
 
     ## COLLECTION OPS AND INFOS OF NN IN NAMED TUPLE
 
