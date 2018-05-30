@@ -13,7 +13,7 @@ def predict(test_inputs, nn, sess):
     predictions, jac = sess.run([nn.predictions, nn.jac], 
                                 feed_dict=test_feed_dict)
 
-    return predictions, jac
+    return predictions, jac[0]
 
         
 
