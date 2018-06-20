@@ -16,16 +16,14 @@ from hyperdash import Experiment
 
 deep_cal_dir = up(os.getcwd())
 
-project_name = 'heston_3L_bayes_v1'
-project_dir = 'results/' + project_name
+project_name = 'rb_3L_bayes_v1'
+project_dir = deep_cal_dir + '/' + project_name
 
 # --------------------- Logging stuff ------------------------------------- #
 
-
-
-logger = logging.getLogger(project_name)
+logger = logging.getLogger('deep_cal')
 logger.setLevel(logging.INFO)
-fh = logging.FileHandler(project_dir + 'bayes_search.log')    
+fh = logging.FileHandler(project_dir + '/bayes_search.log')    
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
@@ -37,28 +35,22 @@ logger.debug("Tensorflow version" + tf.__version__)
 # --------------------- Configuration ------------------------------------- #
 
 # Labeled data configuration
-train_filename = deep_cal_dir + '/data/heston/training_data.csv'
-validation_filename = deep_cal_dir + '/data/heston/validation_data.csv'
-feature_cols = [ _ for _ in range(7)]
-label_cols = [7]
+train_filename = deep_cal_dir + '/data/rough_bergomi/training_data.csv'
+validation_filename = deep_cal_dir + '/data/rough_bergomi/validation_data.csv'
+feature_cols = [ _ for _ in range(6)]
+label_cols = [6]
 
 # Training configuration
-random_seed = 2018
-nb_epochs = 4
+random_seed = 1111
+nb_epochs = 15
 
 # Search space
-space = [(1,2), 
-         (1,2),
-         (1,2),
-         (-7.0, -2.0),
-         (5,12),
-         (0.25,1.0)
-        ]
+space = [(4,10)] * 4 + [(-6.0, -2.0), (6,10), (0.25,1.0)]
 
 # Gaussian optimization parameters
 n_calls = 100
 n_random_starts = 33
-acq_func = 'EIps'
+acq_func = 'LCB'
 n_jobs = -1
 verbose = False
 random_state = random_seed + 1
@@ -104,9 +96,10 @@ def train_bayes(params):
     hd_exp = Experiment(project_name)
 
     # Translate params into format understood by train function
-    layer_sizes = hd_exp.param('layer_sizes', (2**np.array(params[:3])).tolist())
-    learning_rate = hd_exp.param('learning rate', 10**params[3])
-    mini_batch_size = hd_exp.param('mini batch size', int(2**params[4]))
+    n_layer = 4
+    layer_sizes = hd_exp.param('layer_sizes', (2**np.array(params[:n_layer])).tolist())
+    learning_rate = hd_exp.param('learning rate', 10**params[n_layer])
+    mini_batch_size = hd_exp.param('mini batch size', int(2**params[n_layer + 1]))
     pkeep = hd_exp.param('dropout prob', 1)
     hyper_params = [layer_sizes, learning_rate, mini_batch_size, pkeep]
     hyper_param_str = make_hyper_param_str(hyper_params)
@@ -126,7 +119,7 @@ def train_bayes(params):
     # Finish Hyperdash Experiment
     hd_exp.end()
     
-    return best_error, elapsed_time
+    return best_error
 
 # Gaussian optimisation
 logger.info('Running Gaussian optimisation with %i calls, %i random starts and \
