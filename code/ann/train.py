@@ -168,9 +168,14 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             # Running through individual minibatches and doing backprop.
             for i in range(nb_mini_batches):
 
-                logger.debug('Iteration: %i' %i)
+                start_index = i * mini_batch_size
+                stop_index = start_index + mini_batch_size
 
-                mini_batch_indices = shuffled_indices[i:i + mini_batch_size]
+                mini_batch_indices = shuffled_indices[start_index:stop_index]
+
+                logger.debug('Iter {}. \n Input \n {}. \n Label \n {}'.format(
+                            i, train_tuple.features[mini_batch_indices, :],
+                            train_tuple.labels[mini_batch_indices, :]))
 
                 train_training_feed = { 
                     nn.inputs : train_tuple.features[mini_batch_indices, :],
