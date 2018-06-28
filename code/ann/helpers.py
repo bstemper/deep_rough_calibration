@@ -155,7 +155,7 @@ def nn_is_fully_trained(df, threshold):
 def nn_does_not_learn(df):
     """
     Checks from df whether the NN does not learn, i.e. if the last reported
-    error on the validation set is 10% higher than the running mean in the last 
+    loss on the validation set is 20% higher than the running mean in the last 
     five epochs. If yes, then function returns True, False otherwise.
 
     Arguments:
@@ -175,9 +175,9 @@ def nn_does_not_learn(df):
 
     if nb_epoch >= 1:
 
-        roll_avg = df.loc[nb_epoch-min(nb_epoch,5):nb_epoch, 'val_err10pc'].mean()
+        roll_avg = df.loc[nb_epoch-min(nb_epoch,5):nb_epoch, 'val_loss'].mean()
 
-        if df.loc[nb_epoch - 1, 'val_err10pc'] >= 1.2 * roll_avg:
+        if df.loc[nb_epoch - 1, 'val_loss'] >= 1.2 * roll_avg:
 
             logger.info('Neural network does not learn (anymore).')
 
