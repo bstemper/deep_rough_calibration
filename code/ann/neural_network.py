@@ -75,7 +75,7 @@ def dense_relu_bn_drop(inputs, units, training_phase, pkeep,
                             kernel_initializer=kernel_init)
 
         # Applying batch normalisaton by Ioffe et al. (2015).
-        l = tf.layers.batch_normalization(l, training=training_phase)
+        # l = tf.layers.batch_normalization(l, training=training_phase)
 
         # Applying activation function.
         l = tf.nn.relu(l)
@@ -176,8 +176,8 @@ def dense_nn(nb_features, layer_sizes, nb_labels):
     # Define the loss function.
     with tf.name_scope('loss'):
 
-        # loss = tf.losses.mean_squared_error(labels, prediction_layer)
-        loss = tf.reduce_mean(tf.square((prediction_layer - labels)/labels))
+        loss = tf.losses.mean_squared_error(labels, prediction_layer)
+        
         tf.summary.scalar('loss', loss)
 
     # Define accuracy = % of predictions with RE < certain threshold.
