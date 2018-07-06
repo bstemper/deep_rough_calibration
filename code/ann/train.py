@@ -199,9 +199,11 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             log_data = layer_sizes + [lr, pkeep, epoch] + train_results \
                        + validation_results
             log_df.loc[log_df.shape[0]] = log_data
+            best_error = log_df.val_err5pc.min()
             
-            epoch_res = 'Ep %i: loss|err10pc|err5pc %s,  %s' \
-                        % (epoch, train_results, validation_results)
+            epoch_res = 'Ep %i: loss|err10pc|err5pc %s,  %s. Best err5pc: %.4f' \
+                        % (epoch, train_results, validation_results,
+                           best_error)
 
             # Logging results to hyperdash and logging csv.
             hd_exp.metric('train loss', train_results[0])
@@ -210,24 +212,33 @@ def train(train_tuple, validation_tuple, hyper_params, nb_epochs, seed,
             hd_exp.metric('validation loss', validation_results[0])
             hd_exp.metric('validation error 10%', validation_results[1])
             hd_exp.metric('validation error 5%', validation_results[2])
+            hd_exp.metric('best 5% val error', best_error)
 
             logger.info(epoch_res)
 
             # Checking conditions for breaking the training
-            cond1 = nn_is_fully_trained(log_df, 0.02)
+            cond1 = nn_is_fully_trained(log_df, 0.01)
             cond2 = nn_does_not_learn(log_df)
 
-            if (cond1 or cond2) == True:
+            if cond2:
 
                 break
 
-        # Saving final model.
-        logger.info('Saving final model to disk.')
-        save_path = saver.save(sess, project_dir + '/' + hyper_param_str + 
-                               '/final_model')
+            elif cond1:
 
-        best_error = np.min(log_df['val_err10pc'].values)
-        logger.info('Best error on validation set: %f' % best_error)
+                # Saving final model.
+                logger.info('Saving trained model to disk.')
+                save_path = saver.save(sess, project_dir + '/' + hyper_param_str + 
+                                       '/final_model')
+
+                break
+
+            elif log_df.val_err5pc.values[-1] == best_error:
+
+                # Saving final model.
+                logger.info('Saving best model to disk.')
+                save_path = saver.save(sess, project_dir + '/' + hyper_param_str + 
+                                       '/best_model')
 
         return log_df, best_error
 

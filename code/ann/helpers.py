@@ -121,8 +121,8 @@ def make_hyper_param_str(hyper_params):
 
 def nn_is_fully_trained(df, threshold):
     """
-    Checks from df whether err10pc, the percentage of predictions on the 
-    validation set that have relative error of more than 10%, is less than 
+    Checks from df whether err5pc, the percentage of predictions on the 
+    validation set that have relative error of more than 5%, is less than 
     the given threshold. Threshold is chosen such that function acts as
     indicator that network is fully trained. If network is assumed fully
     trained, function returns True, otherwise returns False.
@@ -132,7 +132,7 @@ def nn_is_fully_trained(df, threshold):
         df: pandas dataframe, shape=[, nb_layers + 9].
             Pandas df log file obtained from backpropagation training.
         threshold: float, between 0 and 1.
-            Percentage threshold for err10pc on validation set under which
+            Percentage threshold for err5pc on validation set under which
             network is assumed to be fully trained.
 
     Returns:
@@ -141,7 +141,7 @@ def nn_is_fully_trained(df, threshold):
             True if accuracy achieved, False otherwise.
     """
 
-    if df.loc[df.shape[0] - 1, 'val_err10pc'] <= threshold:
+    if df.loc[df.shape[0] - 1, 'val_err5pc'] <= threshold:
 
         logger.info('Neural network fully trained.')
 
