@@ -16,7 +16,7 @@ from hyperdash import Experiment
 
 deep_cal_dir = up(os.getcwd())
 
-project_name = 'rb_3L_bayes_v1'
+project_name = 'rb_4096x4_v1'
 project_dir = deep_cal_dir + '/' + project_name
 
 # --------------------- Logging stuff ------------------------------------- #
@@ -42,10 +42,10 @@ label_cols = [6]
 
 # Training configuration
 random_seed = 1111
-nb_epochs = 15
+nb_epochs = 10
 
 # Search space
-space = [(4,10)] * 4 + [(-6.0, -2.0), (6,10), (0.25,1.0)]
+space = [(-6.0, -2.0), (6,11)]
 
 # Gaussian optimization parameters
 n_calls = 100
@@ -96,10 +96,17 @@ def train_bayes(params):
     hd_exp = Experiment(project_name)
 
     # Translate params into format understood by train function
-    n_layer = 4
-    layer_sizes = hd_exp.param('layer_sizes', (2**np.array(params[:n_layer])).tolist())
-    learning_rate = hd_exp.param('learning rate', 10**params[n_layer])
-    mini_batch_size = hd_exp.param('mini batch size', int(2**params[n_layer + 1]))
+    # n_layer = 4
+    # layer_sizes = hd_exp.param('layer_sizes', (2**np.array(params[:n_layer])).tolist())
+    # learning_rate = hd_exp.param('learning rate', 10**params[n_layer])
+    # mini_batch_size = hd_exp.param('mini batch size', int(2**params[n_layer + 1]))
+    # pkeep = hd_exp.param('dropout prob', 1)
+    # hyper_params = [layer_sizes, learning_rate, mini_batch_size, pkeep]
+    # hyper_param_str = make_hyper_param_str(hyper_params)
+
+    layer_sizes = [4096] * 4
+    learning_rate = hd_exp.param('learning rate', 10**params[0])
+    mini_batch_size = hd_exp.param('mini batch size', int(2**params[1]))
     pkeep = hd_exp.param('dropout prob', 1)
     hyper_params = [layer_sizes, learning_rate, mini_batch_size, pkeep]
     hyper_param_str = make_hyper_param_str(hyper_params)
