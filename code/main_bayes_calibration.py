@@ -111,8 +111,8 @@ df = compute_iv_surface(df, model_param, train_mean, train_std)
 
 def log_prior_rB(mu):
     
-    # Transform v_0 to sigma_0 (dist specified for latter only)
-    mu[0] = sqrt(mu[0])
+    transf_mu = mu.copy()
+    transf_mu[0] = sqrt(transf_mu[0])
     
     bounds = { #bounds are transformed to unit normal bounds (shifted and scaled)
         'sigma_0': [-2.5, 7, 0.3, 0.1],
@@ -121,8 +121,8 @@ def log_prior_rB(mu):
         'rho': [-0.25, 2.25, -0.95, 0.2]
     }
     
-    return np.sum([stats.truncnorm.logpdf(mu[i], bounds[key][0], bounds[key][1], 
-                  bounds[key][2], bounds[key][3]) for i, key in enumerate(bounds)])
+    return np.sum([stats.truncnorm.logpdf(transf_mu[i], bounds[key][0], bounds[key][1], 
+                    bounds[key][2], bounds[key][3]) for i, key in enumerate(bounds)])
 
 def log_prior_heston(mu):
     
@@ -135,8 +135,7 @@ def log_prior_heston(mu):
     'v0': [0,1]
     }
 
-    return np.sum([stats.uniform.logpdf(mu[i], loc=bounds[key][0], 
-    			   scale=bounds[key][1]-bounds[key][0] ) 
+    return np.sum([stats.uniform.logpdf(mu[i], loc=bounds[key][0], scale=bounds[key][1]-bounds[key][0] ) 
                    for i, key in enumerate(bounds)])
 
 def compute_mean(mu, x):
@@ -172,11 +171,12 @@ def log_posterior(mu, x, y):
     lp = log_prior_rB(mu)
     
     if not np.isfinite(lp):
-        logger.info('Mu: {}. Lpos: -inf'.format(mu))
+        logger.info('Mu: {}. Logpos: -inf'.format(mu))
         return - np.inf
     
     result = lp + log_likelihood(mu, x, y)
-    logger.info('Mu: {}. Lpos: {}'.format(mu, result))
+
+    logger.info('Mu: {}. Logpos: {}'.format(mu, result))
     
     return result
 
