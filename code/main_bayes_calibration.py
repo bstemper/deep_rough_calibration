@@ -83,29 +83,10 @@ H = 0.07
 eta = 1.9
 rho = -0.9
 
-# Data preprocessing
+ref_param = [xi, H, eta, rho]
+
 df = pd.read_csv(deep_cal_dir + 
-	'/data/rough_bergomi/jim_maturity_strike_rBergomi_with_iv.csv', index_col=0)
-df['log_moneyness'] = np.log(df.strike)
-n = len(df)
-
-truths = [xi, H, eta, rho]
-model_param =[truths]
-
-def compute_iv_surface(df, model_param, train_mean, train_std):
-    
-    mu = np.tile(model_param, (len(df), 1))
-    features = np.column_stack((mu, df.maturity, df.strike))  
-    features = standardise_inputs(features, train_mean, train_std)
-
-    # Compute predictions and errors
-    df['predictions'], _ = predict(features, nn, sess)
-    df['abs_error'] = df.predictions-df.iv
-    df['rel_error'] = abs(df.abs_error/df.iv)
-    
-    return df
-
-df = compute_iv_surface(df, model_param, train_mean, train_std)
+	'/data/rough_bergomi/jim_rBergomi_bayes_data.csv', index_col=0)
 
 # --------------- Bayesian calibration definitions -------------------------- #
 
@@ -155,18 +136,19 @@ def compute_mean(mu, x):
     
     return mean.reshape(-1)
     
-def log_likelihood(mu, x, y):
+def log_likelihood(mu, x, y, weight, sigma):
   
     mean = compute_mean(mu, x)
 
-    logpdf = stats.multivariate_normal.logpdf(y, mean=mean, cov=0.0169) 
+    logpdf = stats.multivariate_normal.logpdf(y, mean=mean,
+                                              cov = np.sqrt(weight) * sigma) 
 
     return logpdf
 
-def neg_log_likelihood(mu, x, y):
-    return -log_likelihood(mu, x, y)
+def neg_log_likelihood(mu, x, y, weight, sigma):
+    return -log_likelihood(mu, x, y, weight, sigma)
 
-def log_posterior(mu, x, y):
+def log_posterior(mu, x, y, weight, sigma):
     
     lp = log_prior_rB(mu)
     
@@ -174,7 +156,7 @@ def log_posterior(mu, x, y):
         logger.info('Mu: {}. Logpos: -inf'.format(mu))
         return - np.inf
     
-    result = lp + log_likelihood(mu, x, y)
+    result = lp + log_likelihood(mu, x, y, weight, sigma)
 
     logger.info('Mu: {}. Logpos: {}'.format(mu, result))
     
@@ -190,11 +172,14 @@ n_steps = 300   # number of MCMC steps to take after burn-in
 
 np.random.seed(0)
 
-pos = [truths + 1e-3*np.random.randn(n_dim) for i in range(n_walkers)]
+pos = [ref_param + 1e-3*np.random.randn(n_dim) for i in range(n_walkers)]
+
+
 
 sampler = emcee.EnsembleSampler(n_walkers, n_dim, log_posterior, 
                                 args=((df.maturity.values, df.strike.values), 
-                                	   df.iv.values))
+                                	   df.mid.values, df.weight.values, 
+                                       df.sigma.values))
 
 
 
@@ -203,7 +188,7 @@ sampler.run_mcmc(pos, n_burn + n_steps)
 print("Mean acceptance fraction: {0:.3f}"
       .format(np.mean(sampler.acceptance_fraction)))
 
-np.save('chain', sampler.chain)
+np.save('chain_market', sampler.chain)
 
 
 
